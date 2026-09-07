@@ -1,0 +1,139 @@
+// Prisma 5 schema for titip.it
+// Provider: Prisma Postgres (pooled TCP endpoint).
+// Schema changes are applied with `npm run db:push` because the pooled
+// connection cannot create the shadow database that `migrate dev` needs.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ServiceCategory {
+  AKADEMIK
+  DEVELOPMENT
+  DESIGN
+  DATA
+  INFRA
+}
+
+enum OrderStatus {
+  MENUNGGU_REVIEW
+  MENUNGGU_PEMBAYARAN
+  DIKERJAKAN
+  REVISI
+  SELESAI
+  DIBATALKAN
+}
+
+enum Urgency {
+  SANTAI
+  NORMAL
+  KILAT
+}
+
+model Service {
+  id          String          @id @default(cuid())
+  slug        String          @unique
+  name        String
+  tagline     String
+  description String
+  category    ServiceCategory
+  priceFrom   Int
+  turnaround  String
+  deliverables String[]
+  imageSeed   String
+  featured    Boolean         @default(false)
+  sortOrder   Int             @default(0)
+  active      Boolean         @default(true)
+  orders      Order[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([active, sortOrder])
+}
+
+model Order {
+  id           String       @id @default(cuid())
+  code         String       @unique
+  name         String
+  email        String
+  whatsapp     String
+  campus       String?
+  title        String
+  brief        String
+  urgency      Urgency      @default(NORMAL)
+  deadline     DateTime?
+  budgetMin    Int?
+  budgetMax    Int?
+  status       OrderStatus  @default(MENUNGGU_REVIEW)
+  quotedPrice  Int?
+  internalNote String?
+  service      Service      @relation(fields: [serviceId], references: [id])
+  serviceId    String
+  events       OrderEvent[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([status, createdAt])
+  @@index([serviceId])
+}
+
+model OrderEvent {
+  id        String      @id @default(cuid())
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+  status    OrderStatus
+  note      String
+  createdAt DateTime    @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  role      String
+  quote     String
+  rating    Int      @default(5)
+  avatarSeed String
+  published Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([published, sortOrder])
+}
+
+model Faq {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  sortOrder Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([published, sortOrder])
+}
+
+model WhatsappNumber {
+  id        String   @id @default(cuid())
+  label     String
+  number    String
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active, sortOrder])
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime @default(now())
+}

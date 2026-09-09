@@ -50,9 +50,8 @@ export async function uploadToR2({
       }),
     );
 
-    const url = publicDomain
-      ? `${publicDomain}/${key}`
-      : `https://${bucketName}.${accountId}.r2.cloudflarestorage.com/${key}`;
+    // Jika ada domain publik R2 dev, gunakan langsung sebagai URL publik yang cepat
+    const url = publicDomain ? `${publicDomain}/${key}` : `/api/files/${key}`;
 
     return {
       success: true,

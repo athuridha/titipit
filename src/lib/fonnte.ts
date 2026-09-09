@@ -98,7 +98,7 @@ export async function notifyNewOrder(order: NewOrderNotificationData) {
     budgetText = `Hingga ${formatRupiah(order.budgetMax)}`;
   }
 
-  const attachmentPart = order.attachmentUrl ? `\n📎 *Lampiran File:*\n${order.attachmentUrl}` : "";
+  const attachmentPart = order.attachmentUrl ? `\n📎 *Lampiran File:* Tersedia di panel admin` : "";
 
   const message = `🚨 *PESANAN BARU MASUK!* 🚨
 ━━━━━━━━━━━━━━━━━

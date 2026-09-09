@@ -49,6 +49,7 @@ function OrderForm() {
     budgetMin: "",
     budgetMax: "",
   });
+  const [uploadedFileName, setUploadedFileName] = useState("");
   const [uploadingFile, setUploadingFile] = useState(false);
   const [uploadError, setUploadError] = useState("");
 
@@ -242,6 +243,7 @@ function OrderForm() {
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error || "Gagal mengunggah file.");
                     set("attachmentUrl", data.url);
+                    setUploadedFileName(file.name);
                   } catch (err: any) {
                     setUploadError(err.message || "Gagal mengunggah file.");
                   } finally {
@@ -259,7 +261,7 @@ function OrderForm() {
           </div>
           {form.attachmentUrl ? (
             <p className="mt-2.5 flex items-center gap-1.5 text-xs text-emerald-500 font-medium">
-              ✓ File terlampir: <a href={form.attachmentUrl} target="_blank" rel="noreferrer" className="underline truncate max-w-xs">{form.attachmentUrl}</a>
+              ✓ Berhasil terlampir: {uploadedFileName || "File dokumen brief"}
             </p>
           ) : null}
           {uploadError ? <p className="mt-2 text-xs text-danger">{uploadError}</p> : null}

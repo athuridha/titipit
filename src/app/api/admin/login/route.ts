@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { adminLoginSchema, fieldErrors } from "@/lib/validation";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 export async function POST(request: Request) {
   const limit = rateLimit(`login:${clientKey(request)}`, 8, 15 * 60 * 1000);
@@ -26,6 +27,16 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "Isian belum lengkap", fields: fieldErrors(parsed.error) },
       { status: 422 },
+    );
+  }
+
+  // Cloudflare Turnstile verification
+  const turnstileToken = typeof (body as any)?.turnstileToken === "string" ? (body as any).turnstileToken : "";
+  const isTurnstileValid = await verifyTurnstileToken(turnstileToken);
+  if (!isTurnstileValid) {
+    return NextResponse.json(
+      { error: "Verifikasi keamanan Cloudflare gagal. Coba muat ulang halaman." },
+      { status: 403 },
     );
   }
 

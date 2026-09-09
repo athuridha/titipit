@@ -1,7 +1,9 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
+import Script from "next/script";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -15,7 +17,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 
 const field =
-  "h-12 w-full rounded-xl border border-[#1e3a63] bg-[#f1f5fb] px-4 text-[0.9375rem] text-slate-900 placeholder:text-slate-400 focus:border-[#2563eb]/70 focus:outline-none";
+  "h-12 w-full rounded-xl bg-[#f1f5fb] px-4 text-[0.9375rem] text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-[#2563eb]/30 focus:outline-none";
 
 function LoginForm() {
   const router = useRouter();
@@ -26,17 +28,40 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstileContainerRef = useRef<HTMLDivElement>(null);
+  const siteKey = process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || "0x4AAAAAAEtqijYHbPgzKmp0";
+
+  useEffect(() => {
+    let active = true;
+
+    // Standard Turnstile implicit render callback
+    (window as any).onTurnstileSuccess = (token: string) => {
+      if (active) setTurnstileToken(token);
+    };
+    (window as any).onTurnstileExpired = () => {
+      if (active) setTurnstileToken("");
+    };
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (loading) return;
+    if (!turnstileToken) {
+      setError("Silakan centang verifikasi Cloudflare terlebih dahulu.");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
       const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, turnstileToken }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -57,7 +82,7 @@ function LoginForm() {
       {error ? (
         <p
           role="alert"
-          className="mb-5 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-500"
+          className="mb-5 rounded-xl bg-red-500/10 px-4 py-3 text-sm font-medium text-red-500"
         >
           {error}
         </p>
@@ -109,6 +134,17 @@ function LoginForm() {
           </button>
         </div>
       </div>
+
+      <div className="mt-5 flex min-h-[65px] justify-center items-center">
+        <div
+          className="cf-turnstile"
+          data-sitekey={siteKey}
+          data-theme="light"
+          data-callback="onTurnstileSuccess"
+          data-expired-callback="onTurnstileExpired"
+        />
+      </div>
+
       <button
         type="submit"
         disabled={loading}
@@ -161,13 +197,18 @@ export default function AdminLoginPage() {
       />
       <div className="relative mx-auto grid w-full max-w-[960px] gap-5 px-4 py-12 md:py-16 lg:grid-cols-[0.9fr_1.1fr]">
         {/* Panel branding */}
-        <div className="overflow-hidden rounded-2xl border border-[#e2e8f0] bg-[#ffffff] p-7 md:p-9">
+        <div className="overflow-hidden rounded-2xl bg-[#ffffff] p-7 md:p-9 shadow-sm">
           <p className="flex items-center gap-2.5">
-            <span className="grid size-8 place-items-center rounded-lg bg-blue-600 font-mono text-sm font-bold text-white">
-              T
-            </span>
+            <Image
+              src="/logo-mark.png"
+              alt=""
+              width={44}
+              height={35}
+              priority
+              className="h-8 w-auto"
+            />
             <span className="text-sm font-semibold tracking-tight text-slate-900">
-              titip.it <span className="font-normal text-slate-500">/ admin</span>
+              titip<span className="text-blue-600">.</span>it <span className="font-normal text-slate-500">/ admin</span>
             </span>
           </p>
           <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.2em] text-[#2563eb]">
@@ -179,7 +220,7 @@ export default function AdminLoginPage() {
           <ul className="mt-8 space-y-5">
             {highlights.map((h) => (
               <li key={h.title} className="flex gap-3.5">
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-[#e2e8f0] bg-[#f1f5fb] text-[#2563eb]">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#f1f5fb] text-[#2563eb]">
                   <h.icon size={19} weight="bold" aria-hidden />
                 </span>
                 <span>
@@ -198,7 +239,7 @@ export default function AdminLoginPage() {
         </div>
 
         {/* Panel form */}
-        <div className="rounded-2xl border border-[#e2e8f0] bg-[#ffffff] p-7 md:p-9">
+        <div className="rounded-2xl bg-[#ffffff] p-7 md:p-9 shadow-sm">
           <h2 className="text-xl font-semibold tracking-tight text-slate-900">Masuk dashboard.</h2>
           <p className="mt-1.5 text-sm leading-relaxed text-slate-500">
             Gunakan akun operator yang sudah dibuat.
@@ -208,7 +249,7 @@ export default function AdminLoginPage() {
               <LoginForm />
             </Suspense>
           </div>
-          <p className="mt-6 border-t border-[#eef2f7] pt-5 text-center text-sm">
+          <p className="mt-6 border-t border-slate-100 pt-5 text-center text-sm">
             <Link
               href="/"
               className="inline-flex items-center gap-1.5 font-medium text-slate-500 transition hover:text-slate-900"
@@ -219,6 +260,10 @@ export default function AdminLoginPage() {
           </p>
         </div>
       </div>
+      <Script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+        strategy="lazyOnload"
+      />
     </div>
   );
 }

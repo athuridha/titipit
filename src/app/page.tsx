@@ -32,6 +32,7 @@ import { Container, Eyebrow } from "@/components/ui/container";
 import { ButtonLink } from "@/components/ui/button";
 import { WorldMap, type MapArc } from "@/components/world-map";
 import { Reveal } from "@/components/ui/reveal";
+import { WhatsappButton } from "@/components/whatsapp-button";
 
 export const revalidate = 300;
 
@@ -158,12 +159,7 @@ export default async function HomePage() {
 
         <Container className="relative z-10 text-center">
           <Reveal className="mx-auto flex flex-col items-center">
-            <span className="inline-flex items-center gap-2 rounded-pill border border-line bg-surface/90 px-4 py-1.5 font-mono text-xs uppercase tracking-[0.18em] text-ink-soft shadow-sm backdrop-blur">
-              <span className="size-2 rounded-full bg-accent animate-pulse" aria-hidden />
-              Solusi Lengkap Kebutuhan IT Kamu
-            </span>
-
-            <h1 className="mt-7 max-w-5xl text-4xl font-semibold leading-[1.08] tracking-tight text-ink sm:text-5xl lg:text-6xl">
+            <h1 className="max-w-5xl text-4xl font-semibold leading-[1.08] tracking-tight text-ink sm:text-5xl lg:text-6xl">
               Semua urusan IT kamu, selesai rapi dan kamu tetap paham alurnya.
             </h1>
 
@@ -176,14 +172,10 @@ export default async function HomePage() {
                 {cta.order.label}
                 <ArrowRight size={17} weight="bold" aria-hidden />
               </ButtonLink>
-              <ButtonLink
-                href={whatsappLink("Halo titip.it, saya ingin konsultasi kebutuhan IT saya.", waPrimary)}
-                size="lg"
-                variant="secondary"
-              >
-                <WhatsappLogo size={18} weight="bold" className="text-accent-text" aria-hidden />
-                Konsultasi WhatsApp gratis
-              </ButtonLink>
+              <WhatsappButton
+                message="Halo titip.it, saya ingin konsultasi kebutuhan IT saya."
+                className="inline-flex items-center justify-center gap-2 rounded-pill font-semibold whitespace-nowrap transition-[transform,background-color,border-color,color] duration-200 ease-[var(--ease-out-expo)] active:translate-y-[1px] border border-line-strong bg-surface text-ink hover:border-accent-hairline hover:bg-surface-2 h-13 px-7 text-base"
+              />
               <ButtonLink href={cta.track.href} size="lg" variant="ghost">
                 {cta.track.label}
               </ButtonLink>
@@ -504,15 +496,13 @@ export default async function HomePage() {
             <p className="mt-4 text-base leading-relaxed text-muted">
               Transparansi adalah prioritas kami. Jika ada hal spesifik yang belum terjawab, diskusikan langsung bersama tim kami melalui WhatsApp tanpa dipungut biaya.
             </p>
-            <ButtonLink
-              href={whatsappLink("Halo titip.it, saya ingin tanya lebih lanjut sebelum memesan.", waPrimary)}
-              variant="secondary"
-              className="mt-8"
-              size="lg"
+            <WhatsappButton
+              message="Halo titip.it, saya ingin tanya lebih lanjut sebelum memesan."
+              className="mt-8 inline-flex items-center justify-center gap-2 rounded-pill font-semibold whitespace-nowrap transition-[transform,background-color,border-color,color] duration-200 ease-[var(--ease-out-expo)] active:translate-y-[1px] border border-line-strong bg-surface text-ink hover:border-accent-hairline hover:bg-surface-2 h-13 px-7 text-base"
             >
               <Headset size={18} weight="bold" aria-hidden />
               Konsultasi WhatsApp gratis
-            </ButtonLink>
+            </WhatsappButton>
           </Reveal>
 
           <div className="divide-y divide-line border-y border-line">
@@ -559,14 +549,13 @@ export default async function HomePage() {
                     {cta.order.label}
                     <ArrowRight size={17} weight="bold" aria-hidden />
                   </ButtonLink>
-                  <ButtonLink
-                    href={whatsappLink("Halo titip.it, saya mau tanya soal layanan.", waPrimary)}
-                    size="lg"
-                    variant="secondary"
+                  <WhatsappButton
+                    message="Halo titip.it, saya mau tanya soal layanan."
+                    className="inline-flex items-center justify-center gap-2 rounded-pill font-semibold whitespace-nowrap transition-[transform,background-color,border-color,color] duration-200 ease-[var(--ease-out-expo)] active:translate-y-[1px] border border-line-strong bg-surface text-ink hover:border-accent-hairline hover:bg-surface-2 h-13 px-7 text-base"
                   >
                     <WhatsappLogo size={18} weight="bold" className="text-accent-text" aria-hidden />
                     Chat operator WhatsApp
-                  </ButtonLink>
+                  </WhatsappButton>
                 </div>
               </div>
 

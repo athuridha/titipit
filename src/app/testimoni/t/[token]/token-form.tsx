@@ -7,20 +7,23 @@ import {
   CheckCircle,
   PaperPlaneTilt,
   ShieldCheck,
+  SpinnerGap,
   Star,
 } from "@phosphor-icons/react/dist/ssr";
 import { Wordmark } from "@/components/wordmark";
 
 type Props = {
-  initialOrderCode?: string;
-  initialName?: string;
-  initialTitle?: string;
-  initialServiceName?: string;
+  token: string;
+  orderCode: string;
+  initialName: string;
+  initialTitle: string;
+  initialServiceName: string;
 };
 
-export function TestimonialForm({
-  initialOrderCode,
-  initialName = "",
+export function TokenTestimonialForm({
+  token,
+  orderCode,
+  initialName,
   initialTitle,
   initialServiceName,
 }: Props) {
@@ -29,7 +32,6 @@ export function TestimonialForm({
   const [name, setName] = useState(initialName);
   const [role, setRole] = useState("");
   const [quote, setQuote] = useState("");
-  const [orderCode] = useState(initialOrderCode ?? "");
   const [consent, setConsent] = useState(true);
 
   const [loading, setLoading] = useState(false);
@@ -56,15 +58,15 @@ export function TestimonialForm({
 
     setLoading(true);
     try {
-      const res = await fetch("/api/testimonials", {
+      const res = await fetch("/api/testimonials/token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          token,
           name: name.trim(),
           role: role.trim(),
           quote: quote.trim(),
           rating,
-          orderCode: orderCode || undefined,
         }),
       });
 
@@ -91,9 +93,8 @@ export function TestimonialForm({
           Terima kasih banyak, {name}!
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-muted">
-          Ulasan kamu telah tersimpan dengan aman dan membantu calon klien lain melihat transparansi serta kualitas pengerjaan di titip.it.
+          Ulasan kamu telah tersimpan. Feedback ini membantu calon klien lain melihat kualitas pengerjaan di titip.it.
         </p>
-
         <div className="mt-8 flex flex-col gap-3">
           <Link
             href="/"
@@ -120,7 +121,7 @@ export function TestimonialForm({
       </div>
 
       <div className="overflow-hidden rounded-card border border-line bg-surface shadow-[var(--shadow-card)]">
-        {/* Header Bar */}
+        {/* Header */}
         <div className="border-b border-line bg-surface-2 p-6 sm:p-8">
           <p className="font-mono text-xs uppercase tracking-widest text-accent-text">
             Ulasan Klien titip.it
@@ -129,27 +130,23 @@ export function TestimonialForm({
             Ceritakan Pengalaman Kamu
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-muted">
-            Feedback jujur kamu membantu kami mempertahankan standar pengerjaan, kejujuran kode sumber, dan sesi penjelasan langsung.
+            Link ini hanya bisa digunakan satu kali. Feedback jujur kamu membantu kami mempertahankan standar pengerjaan.
           </p>
 
-          {orderCode ? (
-            <div className="mt-5 flex flex-wrap items-center gap-3 rounded-field border border-line bg-surface p-3 text-xs font-mono text-ink-soft">
-              <span className="flex items-center gap-1.5 text-accent-text font-semibold">
-                <ShieldCheck size={16} weight="bold" />
-                Pesanan Terverifikasi:
-              </span>
-              <span className="text-ink font-semibold">{orderCode}</span>
-              {initialTitle ? <span className="text-muted">· {initialTitle}</span> : null}
-              {initialServiceName ? (
-                <span className="rounded bg-surface-2 px-2 py-0.5 text-[11px] text-muted">
-                  {initialServiceName}
-                </span>
-              ) : null}
-            </div>
-          ) : null}
+          <div className="mt-5 flex flex-wrap items-center gap-3 rounded-field border border-line bg-surface p-3 text-xs font-mono text-ink-soft">
+            <span className="flex items-center gap-1.5 text-accent-text font-semibold">
+              <ShieldCheck size={16} weight="bold" />
+              Pesanan Terverifikasi:
+            </span>
+            <span className="text-ink font-semibold">{orderCode}</span>
+            <span className="text-muted">· {initialTitle}</span>
+            <span className="rounded bg-surface-2 px-2 py-0.5 text-[11px] text-muted">
+              {initialServiceName}
+            </span>
+          </div>
         </div>
 
-        {/* Form Body */}
+        {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6">
           {error ? (
             <div className="rounded-field border border-red-500/30 bg-red-500/10 p-4 text-xs font-medium text-red-400">
@@ -193,78 +190,78 @@ export function TestimonialForm({
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="name" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1.5">
-                Nama Lengkap / Panggilan
+                Nama
               </label>
               <input
                 id="name"
                 type="text"
-                required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Contoh: Rifqi Ananta"
-                className="h-11 w-full rounded-field border border-line bg-surface-2 px-3.5 text-sm text-ink placeholder:text-muted/40 focus:border-accent focus:outline-none"
+                required
+                className="h-11 w-full rounded-field bg-surface-2 px-4 text-sm text-ink placeholder:text-muted focus:ring-2 focus:ring-accent/30 focus:outline-none"
+                placeholder="Nama kamu"
               />
             </div>
             <div>
               <label htmlFor="role" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1.5">
-                Kampus / Peran / Bisnis
+                Kampus / Bisnis / Peran
               </label>
               <input
                 id="role"
                 type="text"
-                required
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                placeholder="Contoh: Mahasiswa TI, Semarang"
-                className="h-11 w-full rounded-field border border-line bg-surface-2 px-3.5 text-sm text-ink placeholder:text-muted/40 focus:border-accent focus:outline-none"
+                required
+                className="h-11 w-full rounded-field bg-surface-2 px-4 text-sm text-ink placeholder:text-muted focus:ring-2 focus:ring-accent/30 focus:outline-none"
+                placeholder="cth: Mahasiswa UGM"
               />
             </div>
           </div>
 
-          {/* Quote / Testimonial Text */}
+          {/* Quote */}
           <div>
             <label htmlFor="quote" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1.5">
               Ulasan Kamu
             </label>
             <textarea
               id="quote"
-              required
-              rows={4}
               value={quote}
               onChange={(e) => setQuote(e.target.value)}
-              placeholder="Ceritakan bagaimana pengerjaan tugas/proyek kamu, komunikasi dengan tim, ketepatan waktu, dan apakah sesi penjelasannya membantu kamu paham..."
-              className="w-full rounded-field border border-line bg-surface-2 p-3.5 text-sm leading-relaxed text-ink placeholder:text-muted/40 focus:border-accent focus:outline-none"
+              required
+              minLength={10}
+              rows={4}
+              className="w-full rounded-field bg-surface-2 px-4 py-3 text-sm text-ink placeholder:text-muted focus:ring-2 focus:ring-accent/30 focus:outline-none resize-none"
+              placeholder="Ceritakan pengalaman kamu menggunakan jasa titip.it…"
             />
-            <p className="mt-1 text-[11px] font-mono text-muted">
-              {quote.length}/600 karakter
-            </p>
           </div>
 
-          {/* Consent Checkbox */}
-          <label className="flex items-start gap-3 cursor-pointer text-xs leading-relaxed text-ink-soft select-none">
+          {/* Consent */}
+          <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"
               checked={consent}
               onChange={(e) => setConsent(e.target.checked)}
-              className="mt-0.5 size-4 rounded border-line text-accent focus:ring-accent"
+              className="mt-0.5 size-4 rounded accent-[var(--accent)]"
             />
-            <span>
-              Saya bersedia ulasan ini ditampilkan secara publik di beranda titip.it untuk membantu calon klien lain.
+            <span className="text-xs text-muted leading-relaxed">
+              Saya mengizinkan ulasan ini ditampilkan di halaman utama titip.it sebagai testimoni publik.
             </span>
           </label>
 
-          {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading}
-            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-pill bg-accent px-6 text-sm font-semibold text-accent-ink transition hover:brightness-110 disabled:opacity-60 disabled:pointer-events-none"
+            disabled={loading || !consent}
+            className="inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-pill bg-accent px-6 text-sm font-semibold text-accent-ink transition hover:brightness-110 disabled:pointer-events-none disabled:opacity-50"
           >
             {loading ? (
-              <span>Mengirim ulasan...</span>
+              <>
+                <SpinnerGap size={18} weight="bold" className="animate-spin" />
+                Mengirim…
+              </>
             ) : (
               <>
-                <span>Kirim Ulasan Sekarang</span>
-                <PaperPlaneTilt size={17} weight="bold" />
+                <PaperPlaneTilt size={18} weight="bold" />
+                Kirim Ulasan
               </>
             )}
           </button>

@@ -4,6 +4,7 @@ import { orderInputSchema, fieldErrors } from "@/lib/validation";
 import { generateOrderCode } from "@/lib/order-code";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { getSession } from "@/lib/auth";
+import { notifyNewOrder } from "@/lib/fonnte";
 
 export async function POST(request: Request) {
   const limit = rateLimit(`order:${clientKey(request)}`, 5);
@@ -90,6 +91,21 @@ export async function POST(request: Request) {
       },
     },
     select: { code: true, title: true, createdAt: true },
+  });
+
+  // Kirim feedback notifikasi WhatsApp via Fonnte secara asynchronous
+  notifyNewOrder({
+    code: order.code,
+    name: input.name,
+    whatsapp: input.whatsapp,
+    serviceName: service.name,
+    urgency: input.urgency,
+    budgetMin: input.budgetMin ?? null,
+    budgetMax: input.budgetMax ?? null,
+    title: input.title,
+    brief: input.brief,
+  }).catch((err) => {
+    console.error("Gagal kirim notifikasi Fonnte pesanan baru:", err);
   });
 
   return NextResponse.json(

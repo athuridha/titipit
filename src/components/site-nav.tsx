@@ -68,7 +68,9 @@ function SiteNavInner() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <ThemeToggle />
+            <div className="hidden lg:block">
+              <ThemeToggle />
+            </div>
             <Link
               href={cta.track.href}
               className="hidden rounded-pill px-3 py-2 text-sm text-ink-soft transition-colors hover:text-ink lg:block"
@@ -104,17 +106,14 @@ function SiteNavInner() {
                 >
                   <div className="flex h-[68px] shrink-0 items-center justify-between border-b border-line px-5">
                     <Wordmark />
-                    <div className="flex items-center gap-2">
-                      <ThemeToggle />
-                      <button
-                        type="button"
-                        onClick={() => setOpen(false)}
-                        aria-label="Tutup menu navigasi"
-                        className="grid size-10 place-items-center rounded-pill border border-line text-ink transition-colors hover:border-accent-hairline"
-                      >
-                        <X size={18} weight="bold" />
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setOpen(false)}
+                      aria-label="Tutup menu navigasi"
+                      className="grid size-10 place-items-center rounded-pill border border-line text-ink transition-colors hover:border-accent-hairline"
+                    >
+                      <X size={18} weight="bold" />
+                    </button>
                   </div>
                   <nav aria-label="Navigasi seluler" className="flex flex-1 flex-col justify-between px-5 py-6">
                     <div className="flex flex-col gap-1">
@@ -135,6 +134,12 @@ function SiteNavInner() {
                       >
                         {cta.track.label}
                       </Link>
+
+                      {/* Theme Toggle row inside burger drawer */}
+                      <div className="flex items-center justify-between border-b border-line py-4">
+                        <span className="text-base font-medium text-ink">Tema Tampilan</span>
+                        <ThemeToggle />
+                      </div>
                     </div>
 
                     <div className="mt-8 pt-4">

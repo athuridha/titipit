@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { fieldErrors, orderUpdateSchema } from "@/lib/validation";
@@ -55,5 +56,49 @@ export async function PATCH(
     select: { id: true, code: true, status: true, quotedPrice: true },
   });
 
-  return NextResponse.json({ order });
+  // Auto-generate a one-time testimonial token when order is marked SELESAI
+  let testimonialLink: string | null = null;
+  if (status === "SELESAI") {
+    const existing = await prisma.testimonialToken.findUnique({
+      where: { orderId: id },
+    });
+    if (!existing) {
+      const token = randomBytes(24).toString("base64url");
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+      await prisma.testimonialToken.create({
+        data: { token, orderId: id, expiresAt },
+      });
+      testimonialLink = `/testimoni/t/${token}`;
+    }
+  }
+
+  return NextResponse.json({ order, testimonialLink });
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Perlu masuk sebagai operator" }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  const existing = await prisma.order.findUnique({
+    where: { id },
+    select: { id: true, code: true },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: "Pesanan tidak ditemukan" }, { status: 404 });
+  }
+
+  // Delete testimonial token if exists
+  await prisma.testimonialToken.deleteMany({ where: { orderId: id } });
+  // Delete events then the order
+  await prisma.orderEvent.deleteMany({ where: { orderId: id } });
+  await prisma.order.delete({ where: { id } });
+
+  return NextResponse.json({ ok: true, code: existing.code });
 }

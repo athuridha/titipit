@@ -75,6 +75,7 @@ model Order {
   service      Service      @relation(fields: [serviceId], references: [id])
   serviceId    String
   events       OrderEvent[]
+  testimonialToken TestimonialToken?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
@@ -91,6 +92,18 @@ model OrderEvent {
   createdAt DateTime    @default(now())
 
   @@index([orderId, createdAt])
+}
+
+model TestimonialToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String    @unique
+  usedAt    DateTime?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  @@index([token])
 }
 
 model Testimonial {
@@ -136,4 +149,28 @@ model AdminUser {
   name         String
   passwordHash String
   createdAt    DateTime @default(now())
+}
+
+model Portfolio {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  category    String
+  imageUrl    String?
+  projectUrl  String?
+  tags        String[]
+  published   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([published, sortOrder])
+}
+
+model SiteSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+
+  @@index([key])
 }

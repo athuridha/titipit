@@ -18,6 +18,7 @@ export function whatsappLink(message: string, number?: string) {
 export const navLinks = [
   { label: "Layanan", href: "/#layanan" },
   { label: "Cara kerja", href: "/#cara-kerja" },
+  { label: "Portofolio", href: "/portofolio" },
   { label: "Harga", href: "/#harga" },
   { label: "Tanya jawab", href: "/#tanya-jawab" },
 ] as const;

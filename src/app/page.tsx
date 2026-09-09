@@ -295,7 +295,7 @@ export default async function HomePage() {
                     <div>
                       <p className="font-mono text-[10px] uppercase text-muted">Biaya mulai</p>
                       <p className="font-mono text-base font-semibold text-ink">
-                        {formatRupiah(s.priceFrom)}
+                        {s.priceFrom === null ? "Hubungi kami" : formatRupiah(s.priceFrom)}
                       </p>
                       <p className="font-mono text-[11px] text-muted">{s.turnaround}</p>
                     </div>

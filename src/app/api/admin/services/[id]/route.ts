@@ -9,7 +9,7 @@ const patchSchema = z.object({
   tagline: z.string().trim().min(3).max(200).optional(),
   description: z.string().trim().min(10).max(2000).optional(),
   category: z.enum(["AKADEMIK", "DEVELOPMENT", "DESIGN", "DATA", "INFRA"]).optional(),
-  priceFrom: z.number().int().min(0).optional(),
+  priceFrom: z.number().int().min(0).nullable().optional(),
   turnaround: z.string().trim().min(2).max(100).optional(),
   deliverables: z.array(z.string().trim()).optional(),
   featured: z.boolean().optional(),

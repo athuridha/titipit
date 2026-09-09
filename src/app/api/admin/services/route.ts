@@ -9,7 +9,7 @@ const createSchema = z.object({
   tagline: z.string().trim().min(3).max(200),
   description: z.string().trim().min(10).max(2000),
   category: z.enum(["AKADEMIK", "DEVELOPMENT", "DESIGN", "DATA", "INFRA"]),
-  priceFrom: z.number().int().min(0),
+  priceFrom: z.number().int().min(0).nullable(),
   turnaround: z.string().trim().min(2).max(100),
   deliverables: z.array(z.string().trim()).default([]),
   featured: z.boolean().default(false),

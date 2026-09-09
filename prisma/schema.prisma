@@ -42,7 +42,7 @@ model Service {
   tagline     String
   description String
   category    ServiceCategory
-  priceFrom   Int
+  priceFrom   Int?
   turnaround  String
   deliverables String[]
   imageSeed   String

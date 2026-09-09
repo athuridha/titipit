@@ -13,7 +13,7 @@ type Service = {
   id: string;
   slug: string;
   name: string;
-  priceFrom: number;
+  priceFrom: number | null;
   turnaround: string;
 };
 
@@ -174,7 +174,7 @@ function OrderForm() {
             <option value="">{loadingServices ? "Memuat layanan…" : "Pilih layanan"}</option>
             {services.map((s) => (
               <option key={s.id} value={s.slug}>
-                {s.name} — dari {formatRupiah(s.priceFrom)}
+                {s.name} — {s.priceFrom === null ? "hubungi kami" : `dari ${formatRupiah(s.priceFrom)}`}
               </option>
             ))}
           </select>

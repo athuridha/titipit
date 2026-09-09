@@ -68,7 +68,7 @@ type ServiceItem = {
   name: string;
   tagline: string;
   category: string;
-  priceFrom: number;
+  priceFrom: number | null;
   turnaround: string;
   featured: boolean;
   active: boolean;
@@ -323,7 +323,7 @@ function ServiceManager({
   function startEdit(s: any) {
     setEditing(s); setName(s.name); setSlug(s.slug); setTagline(s.tagline);
     setDescription(s.description || ""); setCategory(s.category);
-    setPriceFrom(String(s.priceFrom)); setTurnaround(s.turnaround);
+    setPriceFrom(s.priceFrom === null ? "" : String(s.priceFrom)); setTurnaround(s.turnaround);
     setDeliverablesText((s.deliverables || []).join("\n"));
     setShowForm(true);
   }
@@ -336,7 +336,7 @@ function ServiceManager({
     const payload = {
       name, slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
       tagline, description: description || tagline,
-      category, priceFrom: Number(priceFrom) || 0,
+      category, priceFrom: priceFrom.trim() === "" ? null : Number(priceFrom),
       turnaround, deliverables,
     };
     try {
@@ -439,7 +439,11 @@ function ServiceManager({
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div><label className={label}>Kategori</label><select value={category} onChange={(e) => setCategory(e.target.value)} className={field}><option value="AKADEMIK">Akademik</option><option value="DEVELOPMENT">Development</option><option value="DESIGN">Design</option><option value="DATA">Data</option><option value="INFRA">Infra</option></select></div>
-              <div><label className={label}>Harga Mulai (Rp)</label><input type="number" value={priceFrom} onChange={(e) => setPriceFrom(e.target.value)} required min={0} className={field} placeholder="cth: 250000" /></div>
+              <div>
+                <label className={label}>Harga Mulai (Rp)</label>
+                <input type="number" value={priceFrom} onChange={(e) => setPriceFrom(e.target.value)} min={0} className={field} placeholder="Kosongkan jika harga custom" />
+                <p className={`mt-1 text-[11px] ${muted}`}>Kosongkan untuk menampilkan “Hubungi kami”.</p>
+              </div>
               <div><label className={label}>Estimasi Waktu</label><input value={turnaround} onChange={(e) => setTurnaround(e.target.value)} required className={field} placeholder="cth: 2-5 hari" /></div>
             </div>
             <div><label className={label}>Tagline Singkat</label><input value={tagline} onChange={(e) => setTagline(e.target.value)} required className={field} placeholder="cth: Fullstack web responsif & modern" /></div>
@@ -469,7 +473,7 @@ function ServiceManager({
                     {s.featured ? <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-700"><Star size={11} weight="fill" aria-hidden /> UNGGULAN</span> : null}
                   </span>
                   <span className={`mt-0.5 block truncate text-[13px] ${muted}`}>
-                    {categoryLabel[s.category as keyof typeof categoryLabel] ?? s.category} · mulai {formatRupiah(s.priceFrom)} · {s.turnaround} · {antrean} pesanan
+                    {categoryLabel[s.category as keyof typeof categoryLabel] ?? s.category} · {s.priceFrom === null ? "hubungi kami" : `mulai ${formatRupiah(s.priceFrom)}`} · {s.turnaround} · {antrean} pesanan
                   </span>
                 </span>
                 <span className="flex items-center gap-2">

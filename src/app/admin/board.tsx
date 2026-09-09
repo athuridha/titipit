@@ -1401,6 +1401,92 @@ export function AdminBoard({
     }
   }
 
+  /* Testimonial Form State */
+  const [showTestimonialForm, setShowTestimonialForm] = useState(false);
+  const [editingTestimonial, setEditingTestimonial] = useState<TestimonialItem | null>(null);
+  const [tName, setTName] = useState("");
+  const [tRole, setTRole] = useState("");
+  const [tQuote, setTQuote] = useState("");
+  const [tRating, setTRating] = useState(5);
+  const [tBusy, setTBusy] = useState(false);
+  const [tMsg, setTMsg] = useState("");
+
+  function resetTestimonialForm() {
+    setTName("");
+    setTRole("");
+    setTQuote("");
+    setTRating(5);
+    setEditingTestimonial(null);
+    setShowTestimonialForm(false);
+    setTMsg("");
+  }
+
+  function startEditTestimonial(t: TestimonialItem) {
+    setEditingTestimonial(t);
+    setTName(t.name);
+    setTRole(t.role);
+    setTQuote(t.quote);
+    setTRating(t.rating);
+    setShowTestimonialForm(true);
+    setTMsg("");
+  }
+
+  async function saveTestimonial(e: React.FormEvent) {
+    e.preventDefault();
+    if (tBusy) return;
+    setTBusy(true);
+    setTMsg("");
+    const payload = {
+      name: tName.trim(),
+      role: tRole.trim(),
+      quote: tQuote.trim(),
+      rating: Number(tRating) || 5,
+    };
+
+    try {
+      const url = editingTestimonial
+        ? `/api/admin/testimonials/${editingTestimonial.id}`
+        : "/api/admin/testimonials";
+      const method = editingTestimonial ? "PATCH" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setTMsg(data.error ?? "Gagal menyimpan ulasan.");
+        return;
+      }
+      if (editingTestimonial) {
+        setTestimonials((list) =>
+          list.map((x) => (x.id === editingTestimonial.id ? { ...x, ...data.testimonial } : x))
+        );
+        flash("Testimoni berhasil diperbarui.");
+      } else {
+        setTestimonials((list) => [data.testimonial, ...list]);
+        flash("Testimoni berhasil ditambahkan.");
+      }
+      resetTestimonialForm();
+    } catch {
+      setTMsg("Terjadi kendala jaringan.");
+    } finally {
+      setTBusy(false);
+    }
+  }
+
+  async function removeTestimonial(t: TestimonialItem) {
+    if (!window.confirm(`Hapus testimoni dari "${t.name}"?`)) return;
+    try {
+      const res = await fetch(`/api/admin/testimonials/${t.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setTestimonials((list) => list.filter((x) => x.id !== t.id));
+      flash("Testimoni berhasil dihapus.");
+    } catch {
+      flash("Gagal menghapus testimoni.");
+    }
+  }
+
   async function copy(text: string, labelMsg: string) {
     try {
       await navigator.clipboard.writeText(text);
@@ -2341,24 +2427,137 @@ export function AdminBoard({
 
           {view === "testimoni" ? (
             <>
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Testimoni</h1>
-              <p className={`mt-1 text-sm ${muted}`}>
-                {testimonials.filter((t) => t.published).length} dari {testimonials.length}{" "}
-                tayang di situs.
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Testimoni</h1>
+                  <p className={`mt-1 text-sm ${muted}`}>
+                    {testimonials.filter((t) => t.published).length} dari {testimonials.length}{" "}
+                    tayang di situs.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetTestimonialForm();
+                    setShowTestimonialForm(true);
+                  }}
+                  className={btnPrimary}
+                >
+                  <Plus size={16} weight="bold" aria-hidden /> Tambah Testimoni
+                </button>
+              </div>
+
+              {showTestimonialForm ? (
+                <div className={`${card} mt-4 p-5 md:p-6`}>
+                  <h2 className="text-lg font-semibold text-slate-900">
+                    {editingTestimonial ? "Edit Testimoni" : "Tambah Testimoni"}
+                  </h2>
+                  <form onSubmit={saveTestimonial} className="mt-4 grid gap-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className={label}>Nama Klien *</label>
+                        <input
+                          type="text"
+                          required
+                          value={tName}
+                          onChange={(e) => setTName(e.target.value)}
+                          placeholder="cth. Budi Pratama"
+                          className={field}
+                        />
+                      </div>
+                      <div>
+                        <label className={label}>Peran / Kampus / Bisnis *</label>
+                        <input
+                          type="text"
+                          required
+                          value={tRole}
+                          onChange={(e) => setTRole(e.target.value)}
+                          placeholder="cth. Teknik Informatika Undip / Owner Kafe"
+                          className={field}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={label}>Rating (1 - 5 Bintang)</label>
+                      <select
+                        value={tRating}
+                        onChange={(e) => setTRating(Number(e.target.value))}
+                        className={field}
+                      >
+                        <option value={5}>⭐⭐⭐⭐⭐ (5 Bintang)</option>
+                        <option value={4}>⭐⭐⭐⭐ (4 Bintang)</option>
+                        <option value={3}>⭐⭐⭐ (3 Bintang)</option>
+                        <option value={2}>⭐⭐ (2 Bintang)</option>
+                        <option value={1}>⭐ (1 Bintang)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className={label}>Ulasan / Quote *</label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={tQuote}
+                        onChange={(e) => setTQuote(e.target.value)}
+                        placeholder="Ceritakan pengalaman atau hasil pengerjaan..."
+                        className="w-full rounded-xl bg-slate-50 p-3 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/30 focus:outline-none"
+                      />
+                    </div>
+
+                    {tMsg ? (
+                      <p role="alert" className="text-sm font-medium text-red-600">
+                        {tMsg}
+                      </p>
+                    ) : null}
+
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={resetTestimonialForm}
+                        className={btnGhost}
+                      >
+                        Batal
+                      </button>
+                      <button type="submit" disabled={tBusy} className={btnPrimary}>
+                        {tBusy ? "Menyimpan..." : "Simpan Testimoni"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              ) : null}
+
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 {testimonials.map((t) => (
                   <figure key={t.id} className={`${card} flex flex-col p-5 md:p-6`}>
-                    <div className="flex items-center gap-1" aria-label={`${t.rating} dari 5`}>
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <Star
-                          key={n}
-                          size={15}
-                          weight="fill"
-                          aria-hidden
-                          className={n <= t.rating ? "text-amber-400" : "text-slate-200"}
-                        />
-                      ))}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1" aria-label={`${t.rating} dari 5`}>
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star
+                            key={n}
+                            size={15}
+                            weight="fill"
+                            aria-hidden
+                            className={n <= t.rating ? "text-amber-400" : "text-slate-200"}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => startEditTestimonial(t)}
+                          className="rounded-lg p-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 transition"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeTestimonial(t)}
+                          className="rounded-lg p-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition"
+                        >
+                          <Trash size={14} />
+                        </button>
+                      </div>
                     </div>
                     <blockquote className="mt-3 flex-1 text-sm leading-relaxed text-slate-700">
                       &ldquo;{t.quote}&rdquo;

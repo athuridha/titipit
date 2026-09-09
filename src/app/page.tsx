@@ -34,7 +34,7 @@ import { WorldMap, type MapArc } from "@/components/world-map";
 import { Reveal } from "@/components/ui/reveal";
 import { WhatsappButton } from "@/components/whatsapp-button";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 /** Koneksi hero: Indonesia sebagai pusat pengerjaan IT standar global. */
 const heroArcs: MapArc[] = [
@@ -293,10 +293,21 @@ export default async function HomePage() {
 
                   <div className="mt-8 flex items-center justify-between gap-3 border-t border-line pt-4">
                     <div>
-                      <p className="font-mono text-[10px] uppercase text-muted">Biaya mulai</p>
-                      <p className="font-mono text-base font-semibold text-ink">
-                        {s.priceFrom === null ? "Hubungi kami" : formatRupiah(s.priceFrom)}
-                      </p>
+                      {s.priceFrom === null || s.priceFrom <= 0 ? (
+                        <>
+                          <p className="font-mono text-[10px] uppercase text-muted">Biaya</p>
+                          <p className="font-mono text-base font-semibold text-ink">
+                            Hubungi kami
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="font-mono text-[10px] uppercase text-muted">Biaya mulai</p>
+                          <p className="font-mono text-base font-semibold text-ink">
+                            {formatRupiah(s.priceFrom)}
+                          </p>
+                        </>
+                      )}
                       <p className="font-mono text-[11px] text-muted">{s.turnaround}</p>
                     </div>
 

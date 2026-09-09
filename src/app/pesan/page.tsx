@@ -174,7 +174,7 @@ function OrderForm() {
             <option value="">{loadingServices ? "Memuat layanan…" : "Pilih layanan"}</option>
             {services.map((s) => (
               <option key={s.id} value={s.slug}>
-                {s.name} — {s.priceFrom === null ? "hubungi kami" : `dari ${formatRupiah(s.priceFrom)}`}
+                {s.name} — {s.priceFrom === null || s.priceFrom <= 0 ? "hubungi kami" : `dari ${formatRupiah(s.priceFrom)}`}
               </option>
             ))}
           </select>

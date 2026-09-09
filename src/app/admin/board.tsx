@@ -473,7 +473,7 @@ function ServiceManager({
                     {s.featured ? <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-700"><Star size={11} weight="fill" aria-hidden /> UNGGULAN</span> : null}
                   </span>
                   <span className={`mt-0.5 block truncate text-[13px] ${muted}`}>
-                    {categoryLabel[s.category as keyof typeof categoryLabel] ?? s.category} · {s.priceFrom === null ? "hubungi kami" : `mulai ${formatRupiah(s.priceFrom)}`} · {s.turnaround} · {antrean} pesanan
+                    {categoryLabel[s.category as keyof typeof categoryLabel] ?? s.category} · {s.priceFrom === null || s.priceFrom <= 0 ? "hubungi kami" : `mulai ${formatRupiah(s.priceFrom)}`} · {s.turnaround} · {antrean} pesanan
                   </span>
                 </span>
                 <span className="flex items-center gap-2">

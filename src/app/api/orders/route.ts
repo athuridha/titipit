@@ -79,6 +79,7 @@ export async function POST(request: Request) {
       serviceId: service.id,
       title: input.title,
       brief: input.brief,
+      attachmentUrl: input.attachmentUrl || null,
       urgency: input.urgency,
       deadline: input.deadline ?? null,
       budgetMin: input.budgetMin ?? null,
@@ -104,6 +105,7 @@ export async function POST(request: Request) {
     budgetMax: input.budgetMax ?? null,
     title: input.title,
     brief: input.brief,
+    attachmentUrl: input.attachmentUrl || null,
   }).catch((err) => {
     console.error("Gagal kirim notifikasi Fonnte pesanan baru:", err);
   });

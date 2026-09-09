@@ -49,6 +49,7 @@ type Order = {
   campus: string | null;
   title: string;
   brief: string;
+  attachmentUrl?: string | null;
   urgency: string;
   deadline: string | null;
   budgetMin: number | null;
@@ -482,6 +483,7 @@ function PortfolioManager({ flash }: { flash: (m: string) => void }) {
   const [imageUrl, setImageUrl] = useState("");
   const [projectUrl, setProjectUrl] = useState("");
   const [tagsText, setTagsText] = useState("");
+  const [uploadingImg, setUploadingImg] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -567,7 +569,39 @@ function PortfolioManager({ flash }: { flash: (m: string) => void }) {
             </div>
             <div><label className={label}>Deskripsi</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} required minLength={10} rows={3} className={`${field} !h-auto py-2.5`} placeholder="Deskripsi singkat proyek…" /></div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div><label className={label}>URL Gambar (opsional)</label><input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className={field} placeholder="https://..." /></div>
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className={label}>Gambar Proyek</label>
+                  <label className="cursor-pointer text-xs font-semibold text-blue-600 hover:underline">
+                    {uploadingImg ? "Mengunggah…" : "📁 Upload Gambar"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploadingImg(true);
+                        try {
+                          const fd = new FormData();
+                          fd.append("file", file);
+                          fd.append("folder", "portfolio");
+                          const res = await fetch("/api/upload", { method: "POST", body: fd });
+                          const data = await res.json();
+                          if (!res.ok) throw new Error(data.error || "Gagal mengunggah gambar");
+                          setImageUrl(data.url);
+                          flash("Gambar berhasil diupload!");
+                        } catch (err: any) {
+                          alert(err.message || "Gagal mengunggah");
+                        } finally {
+                          setUploadingImg(false);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className={field} placeholder="https://... atau klik Upload" />
+              </div>
               <div><label className={label}>URL Proyek (opsional)</label><input value={projectUrl} onChange={(e) => setProjectUrl(e.target.value)} className={field} placeholder="https://..." /></div>
             </div>
             <div><label className={label}>Tags (pisah koma)</label><input value={tagsText} onChange={(e) => setTagsText(e.target.value)} className={field} placeholder="React, Next.js, Tailwind" /></div>
@@ -2570,6 +2604,20 @@ export function AdminBoard({
               <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-700">
                 {selected.brief}
               </p>
+
+              {selected.attachmentUrl ? (
+                <div className="mt-3 flex items-center justify-between rounded-xl bg-blue-50/70 p-3.5 text-xs text-blue-900">
+                  <span className="font-medium">📎 Lampiran Dokumen/Brief Klien</span>
+                  <a
+                    href={selected.attachmentUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-lg bg-blue-600 px-3 py-1.5 font-semibold text-white transition hover:bg-blue-500"
+                  >
+                    Buka / Unduh File
+                  </a>
+                </div>
+              ) : null}
 
               <div className="mt-4 grid gap-2 sm:grid-cols-3">
                 <a

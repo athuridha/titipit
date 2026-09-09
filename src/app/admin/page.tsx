@@ -22,6 +22,7 @@ export default async function AdminPage() {
         campus: true,
         title: true,
         brief: true,
+        attachmentUrl: true,
         urgency: true,
         deadline: true,
         budgetMin: true,

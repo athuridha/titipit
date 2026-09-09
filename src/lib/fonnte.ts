@@ -66,6 +66,7 @@ type NewOrderNotificationData = {
   budgetMax: number | null;
   title: string;
   brief: string;
+  attachmentUrl?: string | null;
 };
 
 export async function notifyNewOrder(order: NewOrderNotificationData) {
@@ -97,6 +98,8 @@ export async function notifyNewOrder(order: NewOrderNotificationData) {
     budgetText = `Hingga ${formatRupiah(order.budgetMax)}`;
   }
 
+  const attachmentPart = order.attachmentUrl ? `\n📎 *Lampiran File:*\n${order.attachmentUrl}` : "";
+
   const message = `🚨 *PESANAN BARU MASUK!* 🚨
 ━━━━━━━━━━━━━━━━━
 📋 *Kode:* ${order.code}
@@ -107,7 +110,7 @@ export async function notifyNewOrder(order: NewOrderNotificationData) {
 💰 *Budget:* ${budgetText}
 📝 *Judul:* ${order.title}
 📄 *Brief:*
-${order.brief}
+${order.brief}${attachmentPart}
 ━━━━━━━━━━━━━━━━━
 🔗 *Buka Panel Admin:*
 http://titipit.codzy.net/admin`;

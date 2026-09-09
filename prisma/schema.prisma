@@ -65,6 +65,7 @@ model Order {
   campus       String?
   title        String
   brief        String
+  attachmentUrl String?
   urgency      Urgency      @default(NORMAL)
   deadline     DateTime?
   budgetMin    Int?

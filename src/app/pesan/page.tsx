@@ -43,11 +43,14 @@ function OrderForm() {
     serviceSlug: preselect,
     title: "",
     brief: "",
+    attachmentUrl: "",
     urgency: "NORMAL",
     deadline: "",
     budgetMin: "",
     budgetMax: "",
   });
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   useEffect(() => {
     let alive = true;
@@ -89,6 +92,7 @@ function OrderForm() {
       serviceId: service?.id ?? "",
       title: form.title,
       brief: form.brief,
+      attachmentUrl: form.attachmentUrl || undefined,
       urgency: form.urgency,
       deadline: form.deadline || undefined,
       budgetMin: form.budgetMin === "" ? undefined : Number(form.budgetMin),
@@ -211,6 +215,55 @@ function OrderForm() {
           aria-invalid={Boolean(fields.brief)}
         />
         {fields.brief ? <p className={errorClass}>{fields.brief}</p> : <p className={hintClass}>Minimal 30 karakter. Makin detail, estimasi makin akurat.</p>}
+
+        {/* Upload Dokumen/File Pendukung ke Cloudflare R2 */}
+        <div className="mt-4 rounded-xl border border-dashed border-line bg-surface-2/60 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold text-ink">Lampiran Brief (PDF / Gambar) - Opsional</p>
+              <p className="text-[11px] text-muted">Upload file soal tugas, modul, dokumen spesifikasi PDF, atau sketsa gambar (Maks. 25MB).</p>
+            </div>
+            <div>
+              <input
+                type="file"
+                id="file-upload"
+                accept=".pdf,.png,.jpg,.jpeg,.webp,.zip,.rar"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setUploadingFile(true);
+                  setUploadError("");
+                  try {
+                    const fd = new FormData();
+                    fd.append("file", file);
+                    fd.append("folder", "briefs");
+                    const res = await fetch("/api/upload", { method: "POST", body: fd });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "Gagal mengunggah file.");
+                    set("attachmentUrl", data.url);
+                  } catch (err: any) {
+                    setUploadError(err.message || "Gagal mengunggah file.");
+                  } finally {
+                    setUploadingFile(false);
+                  }
+                }}
+              />
+              <label
+                htmlFor="file-upload"
+                className="inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-pill bg-surface px-4 text-xs font-semibold text-ink shadow-sm transition hover:bg-surface-2 border border-line"
+              >
+                {uploadingFile ? "Mengunggah…" : form.attachmentUrl ? "Ganti File" : "Pilih File"}
+              </label>
+            </div>
+          </div>
+          {form.attachmentUrl ? (
+            <p className="mt-2.5 flex items-center gap-1.5 text-xs text-emerald-500 font-medium">
+              ✓ File terlampir: <a href={form.attachmentUrl} target="_blank" rel="noreferrer" className="underline truncate max-w-xs">{form.attachmentUrl}</a>
+            </p>
+          ) : null}
+          {uploadError ? <p className="mt-2 text-xs text-danger">{uploadError}</p> : null}
+        </div>
       </div>
 
       <div className="mt-6 grid gap-6 md:grid-cols-3">

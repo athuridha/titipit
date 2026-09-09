@@ -28,6 +28,7 @@ export const orderInputSchema = z.object({
     .trim()
     .min(30, "Brief minimal 30 karakter supaya kami bisa hitung harga")
     .max(4000, "Brief maksimal 4000 karakter"),
+  attachmentUrl: z.string().trim().url().optional().or(z.literal("")),
   urgency: z.enum(["SANTAI", "NORMAL", "KILAT"]).default("NORMAL"),
   deadline: z
     .string()

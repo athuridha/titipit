@@ -37,6 +37,7 @@ import { categoryLabel, statusLabel, statusOrder } from "@/lib/status";
 import { formatDateTime, formatRupiah } from "@/lib/format";
 import { site } from "@/lib/site";
 import { WorldMap, type MapArc } from "@/components/world-map";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type Status = (typeof statusOrder)[number];
 type OrderEvent = { status: string; note: string; createdAt: string };
@@ -310,6 +311,8 @@ function ServiceManager({
   const [deliverablesText, setDeliverablesText] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [deletingService, setDeletingService] = useState<ServiceItem | null>(null);
+  const [alertInfo, setAlertInfo] = useState<string | null>(null);
 
   function resetForm() {
     setName(""); setSlug(""); setTagline(""); setDescription("");
@@ -357,20 +360,26 @@ function ServiceManager({
     } catch { setMsg("Jaringan bermasalah."); } finally { setBusy(false); }
   }
 
-  async function remove(s: ServiceItem) {
+  function remove(s: ServiceItem) {
     const antrean = orders.filter((o) => o.serviceId === s.id).length;
     if (antrean > 0) {
-      alert(`Tidak bisa menghapus layanan ini karena masih ada ${antrean} pesanan terkait.`);
+      setAlertInfo(`Tidak bisa menghapus layanan ini karena masih ada ${antrean} pesanan terkait.`);
       return;
     }
-    if (!window.confirm(`Hapus layanan "${s.name}"?`)) return;
+    setDeletingService(s);
+  }
+
+  async function confirmDeleteService() {
+    if (!deletingService) return;
     try {
-      const res = await fetch(`/api/admin/services/${s.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/services/${deletingService.id}`, { method: "DELETE" });
       const data = await res.json();
-      if (!res.ok) { alert(data.error ?? "Gagal menghapus."); return; }
-      setServices((list) => list.filter((x) => x.id !== s.id));
+      if (!res.ok) { setMsg(data.error ?? "Gagal menghapus."); return; }
+      setServices((list) => list.filter((x) => x.id !== deletingService.id));
       flash("Layanan dihapus.");
-    } catch { alert("Gagal menghapus."); }
+    } catch { setMsg("Gagal menghapus."); } finally {
+      setDeletingService(null);
+    }
   }
 
   async function toggle(s: ServiceItem, patch: { active?: boolean; featured?: boolean }) {
@@ -388,6 +397,24 @@ function ServiceManager({
 
   return (
     <>
+      <ConfirmDialog
+        open={Boolean(deletingService)}
+        title="Hapus Layanan"
+        description={`Hapus layanan "${deletingService?.name}"?\nData layanan tidak akan lagi tampil di landing page.`}
+        confirmText="Hapus Layanan"
+        onConfirmAction={confirmDeleteService}
+        onCancelAction={() => setDeletingService(null)}
+      />
+      <ConfirmDialog
+        open={Boolean(alertInfo)}
+        title="Pemberitahuan"
+        description={alertInfo ?? ""}
+        variant="warning"
+        confirmText="Mengerti"
+        cancelText="Tutup"
+        onConfirmAction={() => setAlertInfo(null)}
+        onCancelAction={() => setAlertInfo(null)}
+      />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Produk & Layanan</h1>
@@ -486,6 +513,7 @@ function PortfolioManager({ flash }: { flash: (m: string) => void }) {
   const [uploadingImg, setUploadingImg] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [deletingPortfolio, setDeletingPortfolio] = useState<PortfolioRow | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/portfolio")
@@ -536,16 +564,28 @@ function PortfolioManager({ flash }: { flash: (m: string) => void }) {
     flash(p.published ? "Disembunyikan." : "Ditayangkan.");
   }
 
-  async function remove(p: PortfolioRow) {
-    if (!window.confirm(`Hapus "${p.title}"?`)) return;
-    const res = await fetch(`/api/admin/portfolio/${p.id}`, { method: "DELETE" });
-    if (!res.ok) { flash("Gagal menghapus."); return; }
-    setRows((list) => list?.filter((r) => r.id !== p.id) ?? null);
-    flash("Portofolio dihapus.");
+  async function confirmDeletePortfolio() {
+    if (!deletingPortfolio) return;
+    try {
+      const res = await fetch(`/api/admin/portfolio/${deletingPortfolio.id}`, { method: "DELETE" });
+      if (!res.ok) { flash("Gagal menghapus."); return; }
+      setRows((list) => list?.filter((r) => r.id !== deletingPortfolio.id) ?? null);
+      flash("Portofolio dihapus.");
+    } finally {
+      setDeletingPortfolio(null);
+    }
   }
 
   return (
     <>
+      <ConfirmDialog
+        open={Boolean(deletingPortfolio)}
+        title="Hapus Portofolio"
+        description={`Hapus portofolio "${deletingPortfolio?.title}"?\nItem portofolio ini tidak akan lagi tampil di situs.`}
+        confirmText="Hapus Portofolio"
+        onConfirmAction={confirmDeletePortfolio}
+        onCancelAction={() => setDeletingPortfolio(null)}
+      />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Portofolio</h1>
@@ -592,7 +632,7 @@ function PortfolioManager({ flash }: { flash: (m: string) => void }) {
                           setImageUrl(data.url);
                           flash("Gambar berhasil diupload!");
                         } catch (err: any) {
-                          alert(err.message || "Gagal mengunggah");
+                          setMsg(err.message || "Gagal mengunggah gambar");
                         } finally {
                           setUploadingImg(false);
                         }
@@ -633,7 +673,7 @@ function PortfolioManager({ flash }: { flash: (m: string) => void }) {
               <div className="mt-4 flex gap-2">
                 <button type="button" onClick={() => startEdit(p)} className={btnGhost}>Edit</button>
                 <button type="button" onClick={() => togglePublish(p)} className={btnGhost}>{p.published ? "Sembunyikan" : "Tayangkan"}</button>
-                <button type="button" onClick={() => remove(p)} className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold text-red-500 transition hover:bg-red-50">Hapus</button>
+                <button type="button" onClick={() => setDeletingPortfolio(p)} className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold text-red-500 transition hover:bg-red-50">Hapus</button>
               </div>
             </div>
           </div>
@@ -659,6 +699,7 @@ function WhatsappManager({ flash }: { flash: (m: string) => void }) {
   const [number, setNumber] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [deletingWa, setDeletingWa] = useState<WaRow | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/whatsapp")
@@ -711,19 +752,31 @@ function WhatsappManager({ flash }: { flash: (m: string) => void }) {
     flash(row.active ? "Nomor dinonaktifkan." : "Nomor diaktifkan.");
   }
 
-  async function remove(row: WaRow) {
-    if (!window.confirm(`Hapus ${row.label} (${row.number})?`)) return;
-    const res = await fetch(`/api/admin/whatsapp/${row.id}`, { method: "DELETE" });
-    if (!res.ok) {
-      setMsg("Gagal menghapus.");
-      return;
+  async function confirmDeleteWa() {
+    if (!deletingWa) return;
+    try {
+      const res = await fetch(`/api/admin/whatsapp/${deletingWa.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        setMsg("Gagal menghapus.");
+        return;
+      }
+      setRows((list) => list?.filter((r) => r.id !== deletingWa.id) ?? null);
+      flash("Nomor dihapus.");
+    } finally {
+      setDeletingWa(null);
     }
-    setRows((list) => list?.filter((r) => r.id !== row.id) ?? null);
-    flash("Nomor dihapus.");
   }
 
   return (
     <div>
+      <ConfirmDialog
+        open={Boolean(deletingWa)}
+        title="Hapus Nomor WhatsApp"
+        description={`Hapus nomor ${deletingWa?.label} (${deletingWa?.number})?\nNomor tidak akan lagi digunakan di kontak situs.`}
+        confirmText="Hapus Nomor"
+        onConfirmAction={confirmDeleteWa}
+        onCancelAction={() => setDeletingWa(null)}
+      />
       <div className={`${card} p-5 md:p-6`}>
         <h2 className="text-lg font-semibold tracking-tight text-slate-900">Nomor WhatsApp</h2>
         <p className={`mt-1 text-sm ${muted}`}>
@@ -821,7 +874,7 @@ function WhatsappManager({ flash }: { flash: (m: string) => void }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => remove(r)}
+                    onClick={() => setDeletingWa(r)}
                     aria-label={`Hapus ${r.label}`}
                     className="grid size-9 place-items-center rounded-xl border border-slate-200 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
                   >
@@ -1110,6 +1163,10 @@ export function AdminBoard({
   const [toast, setToast] = useState("");
   const [dragId, setDragId] = useState<string | null>(null);
   const [testimonialLinkModal, setTestimonialLinkModal] = useState<string | null>(null);
+  const [testimonialOrderTarget, setTestimonialOrderTarget] = useState<Order | null>(null);
+  const [generatingToken, setGeneratingToken] = useState(false);
+  const [deletingOrder, setDeletingOrder] = useState<Order | null>(null);
+  const [deletingTestimonial, setDeletingTestimonial] = useState<TestimonialItem | null>(null);
 
   const selected = orders.find((o) => o.id === selectedId) ?? null;
   const firstName = name.split(" ")[0];
@@ -1343,6 +1400,7 @@ export function AdminBoard({
       if (result.testimonialLink) {
         const fullLink = `${window.location.origin}${result.testimonialLink}`;
         setTestimonialLinkModal(fullLink);
+        setTestimonialOrderTarget(o);
       }
     }
     setMovingId(null);
@@ -1357,10 +1415,12 @@ export function AdminBoard({
     setSaving(false);
     if (result.ok) {
       flash("Perubahan tersimpan.");
+      const currentSelected = selected;
       setSelectedId(null);
       if (result.testimonialLink) {
         const fullLink = `${window.location.origin}${result.testimonialLink}`;
         setTestimonialLinkModal(fullLink);
+        setTestimonialOrderTarget(currentSelected);
       }
     }
   }
@@ -1475,15 +1535,59 @@ export function AdminBoard({
     }
   }
 
-  async function removeTestimonial(t: TestimonialItem) {
-    if (!window.confirm(`Hapus testimoni dari "${t.name}"?`)) return;
+  async function regenerateTestimonialToken(orderId: string) {
+    if (generatingToken) return;
+    setGeneratingToken(true);
     try {
-      const res = await fetch(`/api/admin/testimonials/${t.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/orders/${orderId}/testimonial-token`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        flash(data.error ?? "Gagal membuat link baru.");
+        return;
+      }
+      const fullLink = `${window.location.origin}${data.testimonialLink}`;
+      setTestimonialLinkModal(fullLink);
+      flash("Link ulasan berhasil digenerate ulang!");
+    } catch {
+      flash("Gagal menghubungi server.");
+    } finally {
+      setGeneratingToken(false);
+    }
+  }
+
+  async function confirmDeleteTestimonial() {
+    if (!deletingTestimonial) return;
+    try {
+      const res = await fetch(`/api/admin/testimonials/${deletingTestimonial.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
-      setTestimonials((list) => list.filter((x) => x.id !== t.id));
+      setTestimonials((list) => list.filter((x) => x.id !== deletingTestimonial.id));
       flash("Testimoni berhasil dihapus.");
     } catch {
       flash("Gagal menghapus testimoni.");
+    } finally {
+      setDeletingTestimonial(null);
+    }
+  }
+
+  async function confirmDeleteOrder() {
+    if (!deletingOrder) return;
+    try {
+      const res = await fetch(`/api/admin/orders/${deletingOrder.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Gagal menghapus.");
+      }
+      setOrders((list) => list.filter((x) => x.id !== deletingOrder.id));
+      if (selectedId === deletingOrder.id) {
+        setSelectedId(null);
+      }
+      flash(`Pesanan ${deletingOrder.code} dihapus.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal menghapus. Coba lagi.");
+    } finally {
+      setDeletingOrder(null);
     }
   }
 
@@ -1493,22 +1597,6 @@ export function AdminBoard({
       flash(`${labelMsg} tersalin.`);
     } catch {
       setError("Gagal menyalin. Salin manual ya.");
-    }
-  }
-
-  async function deleteOrder(o: Order) {
-    if (!window.confirm(`Hapus pesanan ${o.code} (${o.title})?\n\nData pesanan dan riwayatnya akan dihapus permanen.`)) return;
-    try {
-      const res = await fetch(`/api/admin/orders/${o.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Gagal menghapus.");
-      }
-      setOrders((list) => list.filter((x) => x.id !== o.id));
-      setSelectedId(null);
-      flash(`Pesanan ${o.code} dihapus.`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal menghapus. Coba lagi.");
     }
   }
 
@@ -2552,7 +2640,7 @@ export function AdminBoard({
                         </button>
                         <button
                           type="button"
-                          onClick={() => removeTestimonial(t)}
+                          onClick={() => setDeletingTestimonial(t)}
                           className="rounded-lg p-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition"
                         >
                           <Trash size={14} />
@@ -2841,6 +2929,24 @@ export function AdminBoard({
                   <Copy size={15} aria-hidden /> Salin WA
                 </button>
               </div>
+              <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div>
+                  <p className="text-xs font-semibold text-slate-800">Link Ulasan / Testimoni</p>
+                  <p className={`text-[11px] ${muted}`}>Generate token baru untuk dikirim ke klien</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTestimonialOrderTarget(selected);
+                    regenerateTestimonialToken(selected.id);
+                  }}
+                  disabled={generatingToken}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
+                >
+                  <ArrowClockwise size={13} className={generatingToken ? "animate-spin" : ""} />
+                  {generatingToken ? "Membuat..." : "Buat / Reset Link"}
+                </button>
+              </div>
               <p className={`mt-2 text-xs ${muted}`}>
                 {selected.email} · {selected.whatsapp}
                 {selected.campus ? ` · ${selected.campus}` : ""}
@@ -2925,7 +3031,7 @@ export function AdminBoard({
             <div className="flex items-center gap-2 border-t border-slate-100 p-4 md:p-5">
               <button
                 type="button"
-                onClick={() => selected && deleteOrder(selected)}
+                onClick={() => selected && setDeletingOrder(selected)}
                 className="grid size-10 shrink-0 place-items-center rounded-xl text-slate-400 transition hover:bg-red-50 hover:text-red-500"
                 aria-label="Hapus pesanan"
                 title="Hapus pesanan"
@@ -2947,6 +3053,25 @@ export function AdminBoard({
         </div>
       ) : null}
 
+      {/* Confirm Dialogs */}
+      <ConfirmDialog
+        open={Boolean(deletingOrder)}
+        title="Hapus Pesanan"
+        description={`Hapus pesanan ${deletingOrder?.code} (${deletingOrder?.title})?\nData pesanan dan seluruh riwayatnya akan dihapus permanen.`}
+        confirmText="Hapus Pesanan"
+        onConfirmAction={confirmDeleteOrder}
+        onCancelAction={() => setDeletingOrder(null)}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deletingTestimonial)}
+        title="Hapus Testimoni"
+        description={`Hapus testimoni dari "${deletingTestimonial?.name}"?\nUlasan ini tidak akan tampil lagi di situs.`}
+        confirmText="Hapus Testimoni"
+        onConfirmAction={confirmDeleteTestimonial}
+        onCancelAction={() => setDeletingTestimonial(null)}
+      />
+
       {/* Testimonial link modal */}
       {testimonialLinkModal ? (
         <div role="dialog" aria-modal="true" aria-label="Link testimoni">
@@ -2954,18 +3079,30 @@ export function AdminBoard({
             type="button"
             aria-label="Tutup"
             onClick={() => setTestimonialLinkModal(null)}
-            className="fixed inset-0 z-[80] cursor-default bg-slate-900/40"
+            className="fixed inset-0 z-[80] cursor-default bg-slate-900/40 backdrop-blur-sm"
           />
           <div className="fixed left-1/2 top-1/2 z-[80] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-2xl">
-            <h3 className="text-lg font-semibold text-slate-900">Link Testimoni (Sekali Pakai)</h3>
-            <p className={`mt-1.5 text-sm ${muted}`}>
-              Kirim link ini ke pelanggan untuk mengisi ulasan. Link hanya bisa dipakai 1× dan berlaku 30 hari.
-            </p>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Link Testimoni (Sekali Pakai)</h3>
+                <p className={`mt-1.5 text-sm ${muted}`}>
+                  Kirim link ini ke pelanggan untuk mengisi ulasan. Link hanya bisa dipakai 1× dan berlaku 30 hari.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTestimonialLinkModal(null)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
             <div className="mt-4 flex items-center gap-2">
               <input
                 readOnly
                 value={testimonialLinkModal}
-                className="h-11 flex-1 rounded-xl bg-slate-50 px-3 font-mono text-sm text-slate-900"
+                className="h-11 flex-1 rounded-xl bg-slate-50 px-3 font-mono text-sm text-slate-900 focus:outline-none"
                 onClick={(e) => (e.target as HTMLInputElement).select()}
               />
               <button
@@ -2979,7 +3116,19 @@ export function AdminBoard({
                 <Copy size={16} aria-hidden /> Salin
               </button>
             </div>
-            <div className="mt-4 flex justify-end">
+
+            <div className="mt-5 flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+              {testimonialOrderTarget ? (
+                <button
+                  type="button"
+                  disabled={generatingToken}
+                  onClick={() => regenerateTestimonialToken(testimonialOrderTarget.id)}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                >
+                  <ArrowClockwise size={13} className={generatingToken ? "animate-spin" : ""} />
+                  {generatingToken ? "Mengenerate..." : "Generate Ulang"}
+                </button>
+              ) : <span />}
               <button
                 type="button"
                 onClick={() => setTestimonialLinkModal(null)}

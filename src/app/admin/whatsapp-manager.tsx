@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { WhatsappLogo, X } from "@phosphor-icons/react/dist/ssr";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type WaRow = {
   id: string;
@@ -25,6 +26,7 @@ export function WhatsappManager({ flash }: { flash: (m: string) => void }) {
   const [number, setNumber] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [deletingRow, setDeletingRow] = useState<WaRow | null>(null);
 
   async function load() {
     try {
@@ -82,19 +84,29 @@ export function WhatsappManager({ flash }: { flash: (m: string) => void }) {
     flash(row.active ? "Nomor dinonaktifkan." : "Nomor diaktifkan.");
   }
 
-  async function remove(row: WaRow) {
-    if (!window.confirm(`Hapus ${row.label} (${row.number})?`)) return;
-    const res = await fetch(`/api/admin/whatsapp/${row.id}`, { method: "DELETE" });
+  async function confirmRemove() {
+    if (!deletingRow) return;
+    const res = await fetch(`/api/admin/whatsapp/${deletingRow.id}`, { method: "DELETE" });
     if (!res.ok) {
       setMsg("Gagal menghapus.");
+      setDeletingRow(null);
       return;
     }
-    setRows((list) => list?.filter((r) => r.id !== row.id) ?? null);
+    setRows((list) => list?.filter((r) => r.id !== deletingRow.id) ?? null);
     flash("Nomor dihapus.");
+    setDeletingRow(null);
   }
 
   return (
     <div className="space-y-6">
+      <ConfirmDialog
+        open={Boolean(deletingRow)}
+        title="Hapus Nomor WhatsApp"
+        description={`Hapus ${deletingRow?.label} (${deletingRow?.number})?\nNomor ini tidak akan lagi digunakan untuk kontak WhatsApp.`}
+        confirmText="Hapus Nomor"
+        onConfirmAction={confirmRemove}
+        onCancelAction={() => setDeletingRow(null)}
+      />
       <div className={`${card} p-5 md:p-6`}>
         <h2 className="text-lg font-semibold text-white">Nomor WhatsApp Handoff</h2>
         <p className={`mt-1 text-xs ${muted}`}>
@@ -195,7 +207,7 @@ export function WhatsappManager({ flash }: { flash: (m: string) => void }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => remove(r)}
+                    onClick={() => setDeletingRow(r)}
                     aria-label={`Hapus ${r.label}`}
                     className="grid size-9 place-items-center rounded-full border border-white/15 text-white/60 transition hover:bg-red-500/10 hover:text-red-300"
                   >

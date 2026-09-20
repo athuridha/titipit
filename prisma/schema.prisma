@@ -35,6 +35,11 @@ enum Urgency {
   KILAT
 }
 
+enum AdminRole {
+  SUPERADMIN
+  ADMIN
+}
+
 model Service {
   id          String          @id @default(cuid())
   slug        String          @unique
@@ -145,11 +150,13 @@ model WhatsappNumber {
 }
 
 model AdminUser {
-  id           String   @id @default(cuid())
-  username     String   @unique
-  name         String
-  passwordHash String
-  createdAt    DateTime @default(now())
+  id                 String    @id @default(cuid())
+  username           String    @unique
+  name               String
+  passwordHash       String
+  role               AdminRole @default(ADMIN)
+  mustChangePassword Boolean   @default(false)
+  createdAt          DateTime  @default(now())
 }
 
 model Portfolio {

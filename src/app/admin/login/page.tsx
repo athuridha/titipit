@@ -68,7 +68,11 @@ function LoginForm() {
         setError(data.error ?? "Gagal masuk.");
         return;
       }
-      router.push(next);
+      if (data.mustChangePassword) {
+        router.push("/admin/ganti-password");
+      } else {
+        router.push(next);
+      }
       router.refresh();
     } catch {
       setError("Jaringan bermasalah. Coba lagi.");

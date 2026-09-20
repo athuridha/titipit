@@ -79,8 +79,10 @@ export default async function AdminPage() {
 
   return (
     <AdminBoard
+      userId={session.sub}
       name={session.name}
       username={session.username}
+      role={session.role}
       orders={serialized}
       services={services}
       testimonials={testimonials}

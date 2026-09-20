@@ -16,10 +16,12 @@ export type SessionPayload = {
   sub: string;
   username: string;
   name: string;
+  role: string;
+  mustChangePassword: boolean;
 };
 
 export async function createSessionToken(payload: SessionPayload) {
-  return new SignJWT({ username: payload.username, name: payload.name })
+  return new SignJWT({ username: payload.username, name: payload.name, role: payload.role, mcp: payload.mustChangePassword })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.sub)
     .setIssuedAt()
@@ -38,6 +40,8 @@ export async function verifySessionToken(
       sub: payload.sub,
       username: String(payload.username ?? ""),
       name: String(payload.name ?? "Operator"),
+      role: String(payload.role ?? "ADMIN"),
+      mustChangePassword: Boolean(payload.mcp ?? false),
     };
   } catch {
     return null;

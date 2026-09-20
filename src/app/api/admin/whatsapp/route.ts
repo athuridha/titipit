@@ -7,9 +7,14 @@ function unauthorized() {
   return NextResponse.json({ error: "Perlu masuk sebagai operator" }, { status: 401 });
 }
 
+function forbidden() {
+  return NextResponse.json({ error: "Hanya Super Admin yang bisa mengelola WhatsApp" }, { status: 403 });
+}
+
 export async function GET() {
   const session = await getSession();
   if (!session) return unauthorized();
+  if (session.role !== "SUPERADMIN") return forbidden();
 
   const numbers = await prisma.whatsappNumber.findMany({
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -20,6 +25,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return unauthorized();
+  if (session.role !== "SUPERADMIN") return forbidden();
 
   let body: unknown;
   try {

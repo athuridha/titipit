@@ -61,9 +61,15 @@ export async function POST(request: Request) {
     sub: user.id,
     username: user.username,
     name: user.name,
+    role: user.role,
+    mustChangePassword: user.mustChangePassword,
   });
 
-  const response = NextResponse.json({ name: user.name });
+  const response = NextResponse.json({
+    name: user.name,
+    role: user.role,
+    mustChangePassword: user.mustChangePassword,
+  });
   response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions);
   return response;
 }

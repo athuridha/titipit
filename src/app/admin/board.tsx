@@ -25,9 +25,11 @@ import {
   ListBullets,
   MagnifyingGlass,
   Plus,
+  Shield,
   SignOut,
   Star,
   Trash,
+  UserPlus,
   Users,
   Wallet,
   WhatsappLogo,
@@ -91,6 +93,7 @@ type View =
   | "pelanggan"
   | "portofolio"
   | "whatsapp"
+  | "pengguna"
   | "testimoni"
   | "laporan"
   | "pengaturan";
@@ -1126,16 +1129,349 @@ function FonnteSettings({ flash }: { flash: (m: string) => void }) {
   );
 }
 
+/* ---------- User manager (superadmin only) ---------- */
+type AdminUserRow = {
+  id: string;
+  username: string;
+  name: string;
+  role: string;
+  createdAt: string;
+};
+
+function UserManager({
+  flash,
+  currentUserId,
+}: {
+  flash: (m: string) => void;
+  currentUserId: string;
+}) {
+  const [users, setUsers] = useState<AdminUserRow[] | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [formName, setFormName] = useState("");
+  const [formUsername, setFormUsername] = useState("");
+  const [formPassword, setFormPassword] = useState("");
+  const [formRole, setFormRole] = useState("ADMIN");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [deletingUser, setDeletingUser] = useState<AdminUserRow | null>(null);
+  const [editingUser, setEditingUser] = useState<AdminUserRow | null>(null);
+
+  useEffect(() => {
+    let retried = false;
+    async function load() {
+      try {
+        const r = await fetch("/api/admin/users");
+        if (r.ok) {
+          const data = await r.json();
+          setUsers(data.users);
+        } else if (!retried) {
+          retried = true;
+          setTimeout(load, 1000);
+        } else {
+          setMsg("Gagal memuat daftar admin.");
+        }
+      } catch {
+        if (!retried) {
+          retried = true;
+          setTimeout(load, 1000);
+        } else {
+          setMsg("Gagal memuat daftar admin.");
+        }
+      }
+    }
+    load();
+  }, []);
+
+  function resetForm() {
+    setFormName("");
+    setFormUsername("");
+    setFormPassword("");
+    setFormRole("ADMIN");
+    setShowForm(false);
+    setEditingUser(null);
+    setMsg("");
+  }
+
+  function startEdit(u: AdminUserRow) {
+    setEditingUser(u);
+    setFormName(u.name);
+    setFormUsername(u.username);
+    setFormPassword("");
+    setFormRole(u.role);
+    setShowForm(true);
+  }
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setMsg("");
+    try {
+      if (editingUser) {
+        const payload: Record<string, string> = { name: formName, role: formRole };
+        if (formPassword) payload.password = formPassword;
+        const res = await fetch(`/api/admin/users/${editingUser.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setMsg(data.fields?.name ?? data.fields?.password ?? data.error ?? "Gagal menyimpan.");
+          return;
+        }
+        setUsers((list) =>
+          list?.map((u) => (u.id === editingUser.id ? data.user : u)) ?? null,
+        );
+        flash("Admin diperbarui.");
+      } else {
+        const res = await fetch("/api/admin/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: formUsername,
+            password: formPassword,
+            name: formName,
+            role: formRole,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setMsg(
+            data.fields?.username ?? data.fields?.password ?? data.error ?? "Gagal menambah.",
+          );
+          return;
+        }
+        setUsers((list) => [...(list ?? []), data.user]);
+        flash("Admin baru ditambahkan.");
+      }
+      resetForm();
+    } catch {
+      setMsg("Jaringan bermasalah. Coba lagi.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deletingUser) return;
+    try {
+      const res = await fetch(`/api/admin/users/${deletingUser.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setMsg(data.error ?? "Gagal menghapus.");
+        setDeletingUser(null);
+        return;
+      }
+      setUsers((list) => list?.filter((u) => u.id !== deletingUser.id) ?? null);
+      flash("Admin dihapus.");
+    } finally {
+      setDeletingUser(null);
+    }
+  }
+
+  return (
+    <>
+      <ConfirmDialog
+        open={Boolean(deletingUser)}
+        title="Hapus Admin"
+        description={`Hapus akun ${deletingUser?.name} (@${deletingUser?.username})?\nAkun ini tidak akan bisa login lagi.`}
+        confirmText="Hapus Admin"
+        onConfirmAction={confirmDelete}
+        onCancelAction={() => setDeletingUser(null)}
+      />
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Kelola Admin</h1>
+          <p className={`mt-1 text-sm ${muted}`}>
+            Tambah atau kelola akun operator panel admin.
+          </p>
+        </div>
+        {!showForm ? (
+          <button
+            type="button"
+            onClick={() => {
+              resetForm();
+              setShowForm(true);
+            }}
+            className={btnPrimary}
+          >
+            <UserPlus size={16} weight="bold" aria-hidden /> Tambah Admin
+          </button>
+        ) : null}
+      </div>
+
+      {showForm ? (
+        <div className={`${card} mt-4 p-5 md:p-6`}>
+          <h2 className="font-semibold text-slate-900">
+            {editingUser ? `Edit ${editingUser.name}` : "Tambah Admin Baru"}
+          </h2>
+          {msg ? (
+            <p
+              role="alert"
+              className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600"
+            >
+              {msg}
+            </p>
+          ) : null}
+          <form onSubmit={save} className="mt-4 grid gap-4 md:grid-cols-2">
+            <div>
+              <label htmlFor="user-name" className={label}>
+                Nama Lengkap
+              </label>
+              <input
+                id="user-name"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                placeholder="cth: Operator Dua"
+                required
+                minLength={2}
+                maxLength={60}
+                className={field}
+              />
+            </div>
+            <div>
+              <label htmlFor="user-username" className={label}>
+                Username
+              </label>
+              <input
+                id="user-username"
+                value={formUsername}
+                onChange={(e) =>
+                  setFormUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))
+                }
+                placeholder="cth: operator2"
+                required={!editingUser}
+                disabled={Boolean(editingUser)}
+                minLength={3}
+                maxLength={32}
+                className={`${field} ${editingUser ? "opacity-50" : ""}`}
+              />
+            </div>
+            <div>
+              <label htmlFor="user-password" className={label}>
+                Password{editingUser ? " (kosongkan jika tidak diubah)" : ""}
+              </label>
+              <input
+                id="user-password"
+                type="password"
+                value={formPassword}
+                onChange={(e) => setFormPassword(e.target.value)}
+                placeholder="••••••••"
+                required={!editingUser}
+                minLength={8}
+                className={field}
+              />
+            </div>
+            <div>
+              <label htmlFor="user-role" className={label}>
+                Peran
+              </label>
+              <select
+                id="user-role"
+                value={formRole}
+                onChange={(e) => setFormRole(e.target.value)}
+                className={field}
+              >
+                <option value="ADMIN">Admin</option>
+                <option value="SUPERADMIN">Super Admin</option>
+              </select>
+              <p className={`mt-1.5 text-xs ${muted}`}>
+                Admin bisa mengakses semua menu kecuali WhatsApp dan Kelola Admin.
+              </p>
+            </div>
+            <div className="flex items-end gap-2 md:col-span-2">
+              <button type="submit" disabled={busy} className={btnPrimary}>
+                {busy ? "Menyimpan…" : editingUser ? "Simpan Perubahan" : "Tambah Admin"}
+              </button>
+              <button type="button" onClick={resetForm} className={btnGhost}>
+                Batal
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
+
+      <div className={`${card} mt-4 overflow-hidden`}>
+        {users === null ? (
+          <p className={`p-8 text-center text-sm ${muted}`}>Memuat daftar admin…</p>
+        ) : users.length === 0 ? (
+          <p className={`p-8 text-center text-sm ${muted}`}>Belum ada admin.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[540px] border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100">
+                  <th scope="col" className={th}>Nama</th>
+                  <th scope="col" className={th}>Username</th>
+                  <th scope="col" className={th}>Peran</th>
+                  <th scope="col" className={th} />
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((u) => (
+                  <tr key={u.id} className="border-b border-slate-100 last:border-0">
+                    <td className={`${td} font-medium text-slate-900`}>{u.name}</td>
+                    <td className={`${td} font-mono text-slate-600`}>@{u.username}</td>
+                    <td className={td}>
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                          u.role === "SUPERADMIN"
+                            ? "bg-blue-50 text-blue-600"
+                            : "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        {u.role === "SUPERADMIN" ? "Super Admin" : "Admin"}
+                      </span>
+                    </td>
+                    <td className={`${td} text-right`}>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(u)}
+                          className={btnGhost}
+                        >
+                          Edit
+                        </button>
+                        {u.id !== currentUserId ? (
+                          <button
+                            type="button"
+                            onClick={() => setDeletingUser(u)}
+                            className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold text-red-500 transition hover:bg-red-50"
+                          >
+                            Hapus
+                          </button>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 /* ---------- main board ---------- */
 export function AdminBoard({
+  userId,
   name,
   username,
+  role,
   orders: initial,
   services: servicesInitial,
   testimonials: testimonialsInitial,
 }: {
+  userId: string;
   name: string;
   username: string;
+  role: string;
   orders: Order[];
   services: ServiceItem[];
   testimonials: TestimonialItem[];
@@ -1652,14 +1988,21 @@ export function AdminBoard({
     setNavOpen(false);
   }
 
+  const isSuperAdmin = role === "SUPERADMIN";
+
   /* ----- static config ----- */
   const menus: { v: View; label: string; icon: typeof House; badge?: number }[] = [
     { v: "dashboard", label: "Dashboard", icon: House },
     { v: "pesanan", label: "Pesanan", icon: ClipboardText, badge: stats.needReview },
-    { v: "pelanggan", label: "Pengguna", icon: Users },
+    { v: "pelanggan", label: "Pelanggan", icon: Users },
     { v: "produk", label: "Produk & Layanan", icon: Cube },
     { v: "portofolio", label: "Portofolio", icon: FolderOpen },
-    { v: "whatsapp", label: "WhatsApp", icon: WhatsappLogo },
+    ...(isSuperAdmin
+      ? [
+          { v: "whatsapp" as View, label: "WhatsApp", icon: WhatsappLogo },
+          { v: "pengguna" as View, label: "Kelola Admin", icon: Shield },
+        ]
+      : []),
     { v: "testimoni", label: "Testimoni", icon: Star },
     { v: "laporan", label: "Laporan", icon: ChartBar },
     { v: "pengaturan", label: "Pengaturan", icon: Gear },
@@ -1842,7 +2185,7 @@ export function AdminBoard({
                   <span className="block text-[13px] font-semibold leading-tight text-slate-900">
                     Admin
                   </span>
-                  <span className={`block text-[11px] leading-tight ${muted}`}>Super Admin</span>
+                  <span className={`block text-[11px] leading-tight ${muted}`}>{isSuperAdmin ? "Super Admin" : "Admin"}</span>
                 </span>
                 <CaretDown size={14} className="hidden text-slate-400 md:block" aria-hidden />
               </button>
@@ -2517,6 +2860,10 @@ export function AdminBoard({
             </>
           ) : null}
 
+          {view === "pengguna" && isSuperAdmin ? (
+            <UserManager flash={flash} currentUserId={userId} />
+          ) : null}
+
           {view === "testimoni" ? (
             <>
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -2773,7 +3120,7 @@ export function AdminBoard({
                 <dl className="mt-5 space-y-3 border-t border-slate-100 pt-5 text-sm">
                   <div className="flex justify-between gap-4">
                     <dt className={muted}>Peran</dt>
-                    <dd className="font-medium text-slate-900">Super Admin</dd>
+                <dd className="font-medium text-slate-900">{isSuperAdmin ? "Super Admin" : "Admin"}</dd>
                   </div>
                   <div className="flex justify-between gap-4">
                     <dt className={muted}>Sesi</dt>

@@ -33,6 +33,14 @@ export async function PATCH(
   if (session.role !== "SUPERADMIN") return forbidden();
 
   const { id } = await params;
+
+  if (id === session.sub) {
+    return NextResponse.json(
+      { error: "Gunakan halaman Pengaturan untuk mengubah akun sendiri" },
+      { status: 400 },
+    );
+  }
+
   const existing = await prisma.adminUser.findUnique({ where: { id } });
   if (!existing) {
     return NextResponse.json({ error: "Pengguna tidak ditemukan" }, { status: 404 });

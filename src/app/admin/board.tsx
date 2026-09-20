@@ -1428,15 +1428,19 @@ function UserManager({
                       </span>
                     </td>
                     <td className={`${td} text-right`}>
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => startEdit(u)}
-                          className={btnGhost}
-                        >
-                          Edit
-                        </button>
-                        {u.id !== currentUserId ? (
+                      {u.id === currentUserId ? (
+                        <span className={`inline-flex rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600`}>
+                          Kamu
+                        </span>
+                      ) : (
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(u)}
+                            className={btnGhost}
+                          >
+                            Edit
+                          </button>
                           <button
                             type="button"
                             onClick={() => setDeletingUser(u)}
@@ -1444,8 +1448,8 @@ function UserManager({
                           >
                             Hapus
                           </button>
-                        ) : null}
-                      </div>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -1453,6 +1457,199 @@ function UserManager({
             </table>
           </div>
         )}
+      </div>
+    </>
+  );
+}
+
+/* ---------- Settings panel ---------- */
+function SettingsPanel({
+  userId,
+  name: initialName,
+  username,
+  role,
+  isSuperAdmin,
+  logout,
+  flash,
+}: {
+  userId: string;
+  name: string;
+  username: string;
+  role: string;
+  isSuperAdmin: boolean;
+  logout: () => void;
+  flash: (m: string) => void;
+}) {
+  const router = useRouter();
+  const firstName = initialName.split(" ")[0];
+  const [editName, setEditName] = useState(initialName);
+  const [editBusy, setEditBusy] = useState(false);
+  const [editMsg, setEditMsg] = useState("");
+
+  const [curPw, setCurPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwMsg, setPwMsg] = useState("");
+  const [pwOk, setPwOk] = useState(false);
+
+  async function saveName(e: React.FormEvent) {
+    e.preventDefault();
+    if (editBusy || editName.trim() === initialName) return;
+    setEditBusy(true);
+    setEditMsg("");
+    try {
+      const res = await fetch("/api/admin/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName.trim() }),
+      });
+      if (res.ok) {
+        flash("Nama diperbarui. Muat ulang halaman untuk melihat perubahan.");
+        router.refresh();
+      } else {
+        const data = await res.json();
+        setEditMsg(data.error ?? "Gagal menyimpan.");
+      }
+    } catch {
+      setEditMsg("Jaringan bermasalah.");
+    } finally {
+      setEditBusy(false);
+    }
+  }
+
+  async function changePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (pwBusy) return;
+    if (newPw !== confirmPw) {
+      setPwMsg("Password baru dan konfirmasi tidak sama.");
+      return;
+    }
+    setPwBusy(true);
+    setPwMsg("");
+    setPwOk(false);
+    try {
+      const res = await fetch("/api/admin/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword: curPw, password: newPw, confirmPassword: confirmPw }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPwMsg(data.fields?.currentPassword ?? data.fields?.password ?? data.fields?.confirmPassword ?? data.error ?? "Gagal mengubah password.");
+        return;
+      }
+      setCurPw("");
+      setNewPw("");
+      setConfirmPw("");
+      setPwOk(true);
+      flash("Password berhasil diubah.");
+    } catch {
+      setPwMsg("Jaringan bermasalah.");
+    } finally {
+      setPwBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Pengaturan</h1>
+      <p className={`mt-1 text-sm ${muted}`}>Kelola profil dan keamanan akun kamu.</p>
+
+      <div className={`${card} mt-4 max-w-[560px] p-5 md:p-6`}>
+        <h2 className="font-semibold text-slate-900">Profil Operator</h2>
+        <p className="mt-4 flex items-center gap-3">
+          <span className="grid size-11 place-items-center rounded-full bg-blue-600 text-base font-bold text-white">
+            {firstName.charAt(0).toUpperCase()}
+          </span>
+          <span>
+            <span className="block font-semibold text-slate-900">{initialName}</span>
+            <span className={`block font-mono text-xs ${muted}`}>@{username}</span>
+          </span>
+        </p>
+        <dl className="mt-5 space-y-3 border-t border-slate-100 pt-5 text-sm">
+          <div className="flex justify-between gap-4">
+            <dt className={muted}>Peran</dt>
+            <dd className="font-medium text-slate-900">{isSuperAdmin ? "Super Admin" : "Admin"}</dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className={muted}>Sesi</dt>
+            <dd className="font-medium text-slate-900">8 jam per perangkat</dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className={muted}>Versi panel</dt>
+            <dd className="font-mono text-slate-900">v1.0.0</dd>
+          </div>
+        </dl>
+        <div className="mt-6 flex flex-wrap gap-2">
+          <a href="/" className={btnGhost}>
+            Lihat situs <ArrowRight size={15} aria-hidden />
+          </a>
+          <button type="button" onClick={logout} className={btnPrimary}>
+            <SignOut size={16} weight="bold" aria-hidden /> Keluar
+          </button>
+        </div>
+      </div>
+
+      <div className={`${card} mt-4 max-w-[560px] p-5 md:p-6`}>
+        <h2 className="font-semibold text-slate-900">Ubah Password</h2>
+        <p className={`mt-1 text-sm ${muted}`}>Ganti password akun kamu secara berkala.</p>
+        {pwMsg ? (
+          <p role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+            {pwMsg}
+          </p>
+        ) : null}
+        {pwOk ? (
+          <p className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+            Password berhasil diubah.
+          </p>
+        ) : null}
+        <form onSubmit={changePassword} className="mt-4 space-y-4">
+          <div>
+            <label htmlFor="cur-pw" className={label}>Password Saat Ini</label>
+            <input
+              id="cur-pw"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={curPw}
+              onChange={(e) => setCurPw(e.target.value)}
+              className={field}
+              placeholder="Password lama"
+            />
+          </div>
+          <div>
+            <label htmlFor="new-pw" className={label}>Password Baru</label>
+            <input
+              id="new-pw"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              value={newPw}
+              onChange={(e) => setNewPw(e.target.value)}
+              className={field}
+              placeholder="Minimal 8 karakter"
+            />
+          </div>
+          <div>
+            <label htmlFor="confirm-pw" className={label}>Konfirmasi Password Baru</label>
+            <input
+              id="confirm-pw"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              value={confirmPw}
+              onChange={(e) => setConfirmPw(e.target.value)}
+              className={field}
+              placeholder="Ulangi password baru"
+            />
+          </div>
+          <button type="submit" disabled={pwBusy} className={btnPrimary}>
+            {pwBusy ? "Menyimpan…" : "Ubah Password"}
+          </button>
+        </form>
       </div>
     </>
   );
@@ -3102,45 +3299,15 @@ export function AdminBoard({
           ) : null}
 
           {view === "pengaturan" ? (
-            <>
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Pengaturan</h1>
-              <p className={`mt-1 text-sm ${muted}`}>Akun dan sesi perangkat ini.</p>
-
-              <div className={`${card} mt-4 max-w-[560px] p-5 md:p-6`}>
-                <h2 className="font-semibold text-slate-900">Profil Operator</h2>
-                <p className="mt-4 flex items-center gap-3">
-                  <span className="grid size-11 place-items-center rounded-full bg-blue-600 text-base font-bold text-white">
-                    {firstName.charAt(0).toUpperCase()}
-                  </span>
-                  <span>
-                    <span className="block font-semibold text-slate-900">{name}</span>
-                    <span className={`block font-mono text-xs ${muted}`}>@{username}</span>
-                  </span>
-                </p>
-                <dl className="mt-5 space-y-3 border-t border-slate-100 pt-5 text-sm">
-                  <div className="flex justify-between gap-4">
-                    <dt className={muted}>Peran</dt>
-                <dd className="font-medium text-slate-900">{isSuperAdmin ? "Super Admin" : "Admin"}</dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className={muted}>Sesi</dt>
-                    <dd className="font-medium text-slate-900">8 jam per perangkat</dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className={muted}>Versi panel</dt>
-                    <dd className="font-mono text-slate-900">v1.0.0</dd>
-                  </div>
-                </dl>
-                <div className="mt-6 flex flex-wrap gap-2">
-                  <a href="/" className={btnGhost}>
-                    Lihat situs <ArrowRight size={15} aria-hidden />
-                  </a>
-                  <button type="button" onClick={logout} className={btnPrimary}>
-                    <SignOut size={16} weight="bold" aria-hidden /> Keluar
-                  </button>
-                </div>
-              </div>
-            </>
+            <SettingsPanel
+              userId={userId}
+              name={name}
+              username={username}
+              role={role}
+              isSuperAdmin={isSuperAdmin}
+              logout={logout}
+              flash={flash}
+            />
           ) : null}
         </div>
       </div>

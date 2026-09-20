@@ -10,6 +10,7 @@ import {
 } from "@/lib/auth";
 
 const schema = z.object({
+  currentPassword: z.string().optional(),
   password: z
     .string()
     .min(8, "Password baru minimal 8 karakter")
@@ -41,6 +42,30 @@ export async function POST(request: Request) {
       if (!fields[key]) fields[key] = issue.message;
     }
     return NextResponse.json({ error: "Isian belum benar", fields }, { status: 422 });
+  }
+
+  const currentUser = await prisma.adminUser.findUnique({
+    where: { id: session.sub },
+  });
+  if (!currentUser) {
+    return NextResponse.json({ error: "Akun tidak ditemukan" }, { status: 404 });
+  }
+
+  // If not first-login forced change, require current password
+  if (!currentUser.mustChangePassword) {
+    if (!parsed.data.currentPassword) {
+      return NextResponse.json(
+        { error: "Password saat ini wajib diisi", fields: { currentPassword: "Password saat ini wajib diisi" } },
+        { status: 422 },
+      );
+    }
+    const valid = await bcrypt.compare(parsed.data.currentPassword, currentUser.passwordHash);
+    if (!valid) {
+      return NextResponse.json(
+        { error: "Password saat ini salah", fields: { currentPassword: "Password saat ini salah" } },
+        { status: 401 },
+      );
+    }
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);

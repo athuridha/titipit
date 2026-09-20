@@ -664,7 +664,7 @@ function PortfolioManager({ flash }: { flash: (m: string) => void }) {
         {rows?.map((p) => (
           <div key={p.id} className={`${card} overflow-hidden`}>
             {p.imageUrl ? (
-              <div className="aspect-video bg-slate-100"><img src={p.imageUrl} alt={p.title} className="h-full w-full object-cover" /></div>
+              <div className="relative aspect-video bg-slate-100"><Image src={p.imageUrl} alt={p.title} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" /></div>
             ) : (
               <div className="flex aspect-video items-center justify-center bg-slate-50"><FolderOpen size={36} className="text-slate-300" /></div>
             )}
@@ -1158,28 +1158,37 @@ function UserManager({
 
   useEffect(() => {
     let retried = false;
+    let alive = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     async function load() {
       try {
         const r = await fetch("/api/admin/users");
+        if (!alive) return;
         if (r.ok) {
           const data = await r.json();
+          if (!alive) return;
           setUsers(data.users);
         } else if (!retried) {
           retried = true;
-          setTimeout(load, 1000);
+          timer = setTimeout(load, 1000);
         } else {
           setMsg("Gagal memuat daftar admin.");
         }
       } catch {
+        if (!alive) return;
         if (!retried) {
           retried = true;
-          setTimeout(load, 1000);
+          timer = setTimeout(load, 1000);
         } else {
           setMsg("Gagal memuat daftar admin.");
         }
       }
     }
     load();
+    return () => {
+      alive = false;
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   function resetForm() {

@@ -175,9 +175,24 @@ body {
   );
 }
 
+@media (max-width: 640px) {
+  .marquee-track,
+  .marquee-reverse {
+    animation: none;
+    transform: none;
+    will-change: auto;
+  }
+}
+
 /* Grain: fixed, pointer-events-none, never on a scrolling container. */
 .grain {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+@media (max-width: 640px), (prefers-reduced-motion: reduce) {
+  .grain {
+    display: none;
+  }
 }
 
 /* Horizontal scroll rails (testimonials) keep native momentum, no hijack. */

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, FolderOpen } from "@phosphor-icons/react/dist/ssr";
 import { prisma } from "@/lib/prisma";
@@ -91,11 +92,13 @@ export default async function PortfolioPage() {
                     className="group flex flex-col overflow-hidden rounded-card border border-line bg-surface transition-all duration-300 hover:border-line-strong hover:shadow-lg"
                   >
                     {item.imageUrl ? (
-                      <div className="aspect-video overflow-hidden bg-surface-2">
-                        <img
+                      <div className="relative aspect-video overflow-hidden bg-surface-2">
+                        <Image
                           src={item.imageUrl}
                           alt={item.title}
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       </div>
                     ) : (

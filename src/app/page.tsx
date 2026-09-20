@@ -36,40 +36,17 @@ import { WhatsappButton } from "@/components/whatsapp-button";
 
 export const dynamic = "force-dynamic";
 
-/** Koneksi hero: Indonesia sebagai pusat pengerjaan IT standar global. */
+/** Koneksi hero: pekerjaan berangkat dari Indonesia dan terhubung ke dunia. */
+const indonesiaHub = { lat: -6.2, lng: 106.85 };
+
 const heroArcs: MapArc[] = [
-  {
-    start: { lat: -6.2, lng: 106.85 },
-    end: { lat: 35.68, lng: 139.69 },
-  },
-  {
-    start: { lat: -6.2, lng: 106.85 },
-    end: { lat: -33.87, lng: 151.21 },
-  },
-  {
-    start: { lat: -6.2, lng: 106.85 },
-    end: { lat: 52.52, lng: 13.4 },
-  },
-  {
-    start: { lat: -6.2, lng: 106.85 },
-    end: { lat: 37.77, lng: -122.42 },
-  },
-  {
-    start: { lat: -6.2, lng: 106.85 },
-    end: { lat: 40.71, lng: -74.0 },
-  },
-  {
-    start: { lat: -6.2, lng: 106.85 },
-    end: { lat: 51.5, lng: -0.12 },
-  },
-  {
-    start: { lat: 3.6, lng: 98.67 },
-    end: { lat: 25.2, lng: 55.27 },
-  },
-  {
-    start: { lat: -7.25, lng: 112.75 },
-    end: { lat: 1.35, lng: 103.82 },
-  },
+  { start: indonesiaHub, end: { lat: 35.68, lng: 139.69 } },
+  { start: indonesiaHub, end: { lat: 52.52, lng: 13.4 } },
+  { start: indonesiaHub, end: { lat: 37.77, lng: -122.42 } },
+  { start: indonesiaHub, end: { lat: -23.55, lng: -46.63 } },
+  { start: indonesiaHub, end: { lat: 1.35, lng: 103.82 } },
+  { start: indonesiaHub, end: { lat: -1.29, lng: 36.82 } },
+  { start: indonesiaHub, end: { lat: -33.87, lng: 151.21 } },
 ];
 
 const steps = [
@@ -104,7 +81,7 @@ export default async function HomePage() {
     prisma.testimonial.findMany({
       where: { published: true },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-      take: 20,
+      take: 12,
     }),
     prisma.faq.findMany({
       where: { published: true },
@@ -148,7 +125,7 @@ export default async function HomePage() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 top-4 flex justify-center [mask-image:radial-gradient(75%_75%_at_50%_40%,black_30%,transparent_85%)] opacity-75"
         >
-          <WorldMap arcs={heroArcs} className="w-[min(1180px,220vw)] shrink-0" />
+          <WorldMap arcs={heroArcs} className="w-[min(1400px,250vw)] shrink-0" />
         </div>
 
         {/* Bottom Transition Scrim */}
@@ -516,9 +493,9 @@ export default async function HomePage() {
             </WhatsappButton>
           </Reveal>
 
-          <div className="divide-y divide-line border-y border-line">
-            {faqs.map((f, i) => (
-              <Reveal as="div" key={f.id} delay={Math.min(i * 0.04, 0.15)}>
+          <Reveal className="divide-y divide-line border-y border-line">
+            {faqs.map((f) => (
+              <div key={f.id}>
                 <details className="group py-6" name="faq">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-semibold tracking-tight text-ink hover:text-accent-text transition-colors [&::-webkit-details-marker]:hidden">
                     <span>{f.question}</span>
@@ -528,9 +505,9 @@ export default async function HomePage() {
                   </summary>
                   <p className="mt-3.5 max-w-2xl text-sm leading-relaxed text-muted">{f.answer}</p>
                 </details>
-              </Reveal>
+              </div>
             ))}
-          </div>
+          </Reveal>
         </Container>
       </section>
 

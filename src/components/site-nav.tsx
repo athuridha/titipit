@@ -51,7 +51,7 @@ function SiteNavInner() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-line/80 bg-bg/85 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-line/80 bg-bg/95 md:bg-bg/85 md:backdrop-blur-xl">
         <div className="mx-auto flex h-[68px] w-full max-w-[1320px] items-center justify-between gap-6 px-5 md:px-8">
           <Wordmark />
 

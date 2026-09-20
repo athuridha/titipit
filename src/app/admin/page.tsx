@@ -12,7 +12,7 @@ export default async function AdminPage() {
   const [orders, services, testimonials] = await Promise.all([
     prisma.order.findMany({
       orderBy: { createdAt: "desc" },
-      take: 200,
+      take: 120,
       select: {
         id: true,
         code: true,
@@ -33,7 +33,8 @@ export default async function AdminPage() {
         serviceId: true,
         service: { select: { name: true } },
         events: {
-          orderBy: { createdAt: "asc" },
+          orderBy: { createdAt: "desc" },
+          take: 8,
           select: { status: true, note: true, createdAt: true },
         },
       },
@@ -71,10 +72,12 @@ export default async function AdminPage() {
     ...o,
     deadline: o.deadline?.toISOString() ?? null,
     createdAt: o.createdAt.toISOString(),
-    events: o.events.map((e) => ({
-      ...e,
-      createdAt: e.createdAt.toISOString(),
-    })),
+    events: o.events
+      .map((e) => ({
+        ...e,
+        createdAt: e.createdAt.toISOString(),
+      }))
+      .reverse(),
   }));
 
   return (
